@@ -32,7 +32,13 @@ int main() {
             }
             */
 
-            std::cout << doc << std::endl;
+            std::string_view post_text;
+            auto error = doc["commit"]["record"]["text"].get_string().get(post_text);
+            if (error) {
+                return;
+            }
+
+            std::cout << post_text << std::endl;
         } else if (msg->type == ix::WebSocketMessageType::Open) {
             std::cout << "Connection established" << std::endl;
             std::cout << "> " << std::flush;
