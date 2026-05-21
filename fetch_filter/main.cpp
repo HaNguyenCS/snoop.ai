@@ -1,25 +1,41 @@
 #include <iostream>
+#include <chrono>
+#include <thread>
+#include <ixwebsocket/IXWebSocket.h>
+#include <ixwebsocket/IXUserAgent.h>
 #include <cpr/cpr.h>
 #include <simdjson.h>
 
-// just testing if dependencies work
 int main() {
-    // Test CPR
-    std::cout << "Testing CPR Network Request..." << std::endl;
-    cpr::Response r = cpr::Get(cpr::Url{"https://api.github.com/repos/libcpr/cpr/releases/latest"});
-    std::cout << "Status code: " << r.status_code << '\n';
+    ix::WebSocket webSocket;
 
-    // Test simdjson
-    if (r.status_code == 200) {
-        std::cout << "Testing simdjson Parsing..." << std::endl;
-        simdjson::ondemand::parser parser;
-        // simdjson requires padding at the end of the string for SIMD operations
-        simdjson::padded_string json_data(r.text); 
-        
-        simdjson::ondemand::document doc = parser.iterate(json_data);
-        std::string_view release_name = doc["name"];
-        
-        std::cout << "Successfully parsed latest CPR release: " << release_name << std::endl;
+    std::string url{"wss://jetstream2.us-west.bsky.network/subscribe"};
+    webSocket.setUrl(url);
+
+    std::cout << "Connecting to " << url << "..." << std::endl;
+
+    webSocket.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg) {
+        if (msg->type == ix::WebSocketMessageType::Message)
+        {
+            std::cout << "received message: " << msg->str << std::endl;
+            std::cout << "> " << std::flush;
+        }
+        else if (msg->type == ix::WebSocketMessageType::Open)
+        {
+            std::cout << "Connection established" << std::endl;
+            std::cout << "> " << std::flush;
+        }
+        else if (msg->type == ix::WebSocketMessageType::Error)
+        {
+            std::cout << "Connection error: " << msg->errorInfo.reason << std::endl;
+            std::cout << "> " << std::flush;
+        }
+    });
+
+    webSocket.start();
+
+    for (;;) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
     return 0;
