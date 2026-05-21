@@ -1,5 +1,3 @@
-# app/schemas.py
-
 from typing import List
 
 from pydantic import BaseModel, EmailStr, Field
@@ -8,11 +6,6 @@ from pydantic import BaseModel, EmailStr, Field
 class UserSignup(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
-
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
 
 
 class TokenResponse(BaseModel):
@@ -25,25 +18,27 @@ class CurrentUserResponse(BaseModel):
     email: EmailStr
 
 
-class TopicOptionResponse(BaseModel):
-    id: str
-    label: str
+class CompetitorSuggestionRequest(BaseModel):
+    company_name: str
+    industry: str
+    product_description: str
 
 
-class CompanyProfileCreate(BaseModel):
+class CompetitorSuggestionResponse(BaseModel):
+    suggested_competitors: List[str]
+
+
+class MonitoringProfileCreate(BaseModel):
     company_name: str
     industry: str
     product_description: str
     competitors: List[str]
-    topic_ids: List[str]
 
 
-class CompanyProfileResponse(BaseModel):
+class MonitoringProfileResponse(BaseModel):
     id: int
     company_name: str
     industry: str
     product_description: str
     competitors: List[str]
-    topic_ids: List[str]
-    topics_to_monitor: List[str]
     keywords: dict

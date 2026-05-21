@@ -5,19 +5,20 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.ai_client import suggest_competitors_with_ai
 from app.auth import get_current_user
 from app.database import get_db
 from app.keyword_generator import generate_keywords
-from app.models import CompanyProfile, User
-from app.schemas import CompanyProfileCreate, CompanyProfileResponse
-from app.topics import (
-    get_keywords_for_topic_ids,
-    get_topic_labels_for_ids,
-    validate_topic_ids,
+from app.models import MonitoringProfile, User
+from app.schemas import (
+    CompetitorSuggestionRequest,
+    CompetitorSuggestionResponse,
+    MonitoringProfileCreate,
+    MonitoringProfileResponse,
 )
 
 
-router = APIRouter(prefix="/profiles", tags=["Company Profiles"])
+router = APIRouter(prefix="/profiles", tags=["Monitoring Profiles"])
 
 EXPORT_DIR = "data/keyword_exports"
 
@@ -44,57 +45,51 @@ def save_keyword_export(
     return path
 
 
-def profile_to_response(profile: CompanyProfile) -> dict:
-    topic_ids = json.loads(profile.topic_ids_json)
-
+def profile_to_response(profile: MonitoringProfile) -> dict:
     return {
         "id": profile.id,
         "company_name": profile.company_name,
         "industry": profile.industry,
         "product_description": profile.product_description,
         "competitors": json.loads(profile.competitors_json),
-        "topic_ids": topic_ids,
-        "topics_to_monitor": get_topic_labels_for_ids(topic_ids),
         "keywords": json.loads(profile.keywords_json),
     }
 
 
-@router.post("/", response_model=CompanyProfileResponse)
+@router.post("/suggest-competitors", response_model=CompetitorSuggestionResponse)
+def suggest_competitors(
+    request_data: CompetitorSuggestionRequest,
+    current_user: User = Depends(get_current_user),
+):
+    suggested_competitors = suggest_competitors_with_ai(
+        company_name=request_data.company_name,
+        industry=request_data.industry,
+        product_description=request_data.product_description,
+    )
+
+    return {
+        "suggested_competitors": suggested_competitors,
+    }
+
+
+@router.post("/", response_model=MonitoringProfileResponse)
 def create_profile(
-    profile_data: CompanyProfileCreate,
+    profile_data: MonitoringProfileCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    invalid_topic_ids = validate_topic_ids(profile_data.topic_ids)
-
-    if invalid_topic_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": "Invalid topic_ids selected",
-                "invalid_topic_ids": invalid_topic_ids,
-            },
-        )
-
-    selected_topic_labels = get_topic_labels_for_ids(profile_data.topic_ids)
-    selected_topic_keywords = get_keywords_for_topic_ids(profile_data.topic_ids)
-
     keywords = generate_keywords(
         company_name=profile_data.company_name,
         industry=profile_data.industry,
         product_description=profile_data.product_description,
         competitors=profile_data.competitors,
-        selected_topic_ids=profile_data.topic_ids,
-        selected_topic_labels=selected_topic_labels,
-        selected_topic_keywords=selected_topic_keywords,
     )
 
-    profile = CompanyProfile(
+    profile = MonitoringProfile(
         company_name=profile_data.company_name,
         industry=profile_data.industry,
         product_description=profile_data.product_description,
         competitors_json=json.dumps(profile_data.competitors),
-        topic_ids_json=json.dumps(profile_data.topic_ids),
         keywords_json=json.dumps(keywords),
         user_id=current_user.id,
     )
@@ -110,50 +105,33 @@ def create_profile(
     )
 
     return profile_to_response(profile)
-# example response:
-# {
-#   "id": 1,
-#   "company_name": "Shopify",
-#   "industry": "E-commerce software",
-#   "product_description": "Platform that helps merchants create online stores.",
-#   "competitors": ["Wix", "BigCommerce"],
-#   "topic_ids": ["product_launch", "pricing_change"],
-#   "topics_to_monitor": ["Product Launch", "Pricing Change"],
-#   "keywords": {
-#     "all_keywords": [
-#       "wix product launch",
-#       "wix pricing",
-#       "bigcommerce product launch",
-#       "bigcommerce pricing"
-#     ]
-#   }
-# }
 
-@router.get("/", response_model=list[CompanyProfileResponse])
+
+@router.get("/", response_model=list[MonitoringProfileResponse])
 def get_my_profiles(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     profiles = (
-        db.query(CompanyProfile)
-        .filter(CompanyProfile.user_id == current_user.id)
+        db.query(MonitoringProfile)
+        .filter(MonitoringProfile.user_id == current_user.id)
         .all()
     )
 
     return [profile_to_response(profile) for profile in profiles]
 
 
-@router.get("/{profile_id}", response_model=CompanyProfileResponse)
+@router.get("/{profile_id}", response_model=MonitoringProfileResponse)
 def get_one_profile(
     profile_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     profile = (
-        db.query(CompanyProfile)
+        db.query(MonitoringProfile)
         .filter(
-            CompanyProfile.id == profile_id,
-            CompanyProfile.user_id == current_user.id,
+            MonitoringProfile.id == profile_id,
+            MonitoringProfile.user_id == current_user.id,
         )
         .first()
     )
@@ -174,10 +152,10 @@ def get_profile_keywords(
     current_user: User = Depends(get_current_user),
 ):
     profile = (
-        db.query(CompanyProfile)
+        db.query(MonitoringProfile)
         .filter(
-            CompanyProfile.id == profile_id,
-            CompanyProfile.user_id == current_user.id,
+            MonitoringProfile.id == profile_id,
+            MonitoringProfile.user_id == current_user.id,
         )
         .first()
     )

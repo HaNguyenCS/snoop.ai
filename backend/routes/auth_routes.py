@@ -10,7 +10,7 @@ from app.auth import (
 )
 from app.database import get_db
 from app.models import User
-from app.schemas import CurrentUserResponse, TokenResponse, UserLogin, UserSignup
+from app.schemas import CurrentUserResponse, TokenResponse, UserSignup
 
 
 router = APIRouter(prefix="/auth", tags=["Auth"])

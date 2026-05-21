@@ -4,20 +4,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
 from routes.auth_routes import router as auth_router
 from routes.profile_routes import router as profile_router
-from routes.topic_routes import router as topic_router
 
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Competitor Market Monitoring API",
+    title="Snoop AI Competitor Monitoring API",
     description="Backend for competitor news, updates, and release monitoring.",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # hackathon only
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,10 +27,9 @@ app.add_middleware(
 def health_check():
     return {
         "status": "ok",
-        "message": "Competitor market monitoring backend is running.",
+        "message": "Snoop AI backend is running.",
     }
 
 
 app.include_router(auth_router)
-app.include_router(topic_router)
 app.include_router(profile_router)

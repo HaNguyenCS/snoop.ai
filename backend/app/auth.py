@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import os
 from typing import Optional
 
 from fastapi import Depends, HTTPException, status
@@ -10,8 +11,7 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .models import User
 
-
-SECRET_KEY = "change-this-secret-key-before-production"
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
