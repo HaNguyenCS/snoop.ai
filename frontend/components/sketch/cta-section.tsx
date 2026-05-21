@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Search, Sparkles } from "lucide-react"
 
@@ -51,13 +52,15 @@ export function CtaSection() {
             Get competitive intelligence that actually matters.
           </p>
           
-          <Button 
-            size="lg"
-            className="sketch-border bg-primary hover:bg-primary/90 text-primary-foreground font-sketch text-2xl px-10 py-7 wiggle-hover"
-          >
-            <Search className="w-5 h-5 mr-2" />
-            Start snooping
-          </Button>
+          <Link href="/signup">
+            <Button 
+              size="lg"
+              className="sketch-border bg-primary hover:bg-primary/90 text-primary-foreground font-sketch text-2xl px-10 py-7 wiggle-hover"
+            >
+              <Search className="w-5 h-5 mr-2" />
+              Start snooping
+            </Button>
+          </Link>
           
           {/* Hand-drawn arrow pointing to button */}
           <svg className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-16 h-12 text-pencil" viewBox="0 0 60 45">

@@ -1,12 +1,13 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Search, Filter, Zap, Radio } from "lucide-react"
 
 interface HeroSectionProps {
-  onViewDashboard: () => void
-  onHowItWorks: () => void
+  onViewDashboard?: () => void
+  onHowItWorks?: () => void
 }
 
 export function HeroSection({ onViewDashboard, onHowItWorks }: HeroSectionProps) {
@@ -46,19 +47,40 @@ export function HeroSection({ onViewDashboard, onHowItWorks }: HeroSectionProps)
 
             {/* CTAs */}
             <div className="mt-8 flex flex-wrap gap-4">
-              <Button 
-                onClick={onViewDashboard}
-                className="sketch-border bg-primary hover:bg-primary/90 text-primary-foreground font-sketch text-xl px-8 py-6 wiggle-hover"
-              >
-                View dashboard
-              </Button>
-              <Button 
-                onClick={onHowItWorks}
-                variant="outline"
-                className="sketch-border-thin border-ink text-ink hover:bg-ink/5 font-sketch text-xl px-8 py-6"
-              >
-                See how it works
-              </Button>
+              {onViewDashboard ? (
+                <Button 
+                  onClick={onViewDashboard}
+                  className="sketch-border bg-primary hover:bg-primary/90 text-primary-foreground font-sketch text-xl px-8 py-6 wiggle-hover"
+                >
+                  View dashboard
+                </Button>
+              ) : (
+                <Link href="/signup">
+                  <Button 
+                    className="sketch-border bg-primary hover:bg-primary/90 text-primary-foreground font-sketch text-xl px-8 py-6 wiggle-hover"
+                  >
+                    Get started
+                  </Button>
+                </Link>
+              )}
+              {onHowItWorks ? (
+                <Button 
+                  onClick={onHowItWorks}
+                  variant="outline"
+                  className="sketch-border-thin border-ink text-ink hover:bg-ink/5 font-sketch text-xl px-8 py-6"
+                >
+                  See how it works
+                </Button>
+              ) : (
+                <a href="#how-it-works">
+                  <Button 
+                    variant="outline"
+                    className="sketch-border-thin border-ink text-ink hover:bg-ink/5 font-sketch text-xl px-8 py-6"
+                  >
+                    See how it works
+                  </Button>
+                </a>
+              )}
             </div>
 
             {/* Badges */}
