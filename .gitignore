@@ -69,3 +69,5 @@ Testing/
 
 # IDE / Text Editors
 .vscode/
+
+venv/
