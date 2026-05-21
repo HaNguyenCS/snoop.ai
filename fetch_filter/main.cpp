@@ -6,6 +6,47 @@
 #include <cpr/cpr.h>
 #include <simdjson.h>
 
+// Test keywords
+const std::vector<std::string> target_keywords = {
+      "NVidia",
+};
+
+bool is_word_char(unsigned char c) {
+    return std::isalnum(c) || c == '_' || c == '\'';
+}
+
+bool passes_filter(std::string_view post_text) {
+    for (const std::string& kw : target_keywords) {
+        auto search_start = post_text.begin();
+
+        while (search_start != post_text.end()) {
+            auto it = std::search(
+                search_start, post_text.end(),
+                kw.begin(), kw.end(),
+                [](unsigned char ch1, unsigned char ch2) {
+                    return std::toupper(ch1) == std::toupper(ch2);
+                }
+            );
+
+            if (it == post_text.end()) {
+                break;
+            }
+
+            // Word Boundary Verification
+            auto match_end = it + kw.size();
+            bool left_boundary_ok = (it == post_text.begin()) || !is_word_char(*(it - 1));
+            bool right_boundary_ok = (match_end == post_text.end()) || !is_word_char(*match_end);
+
+            if (left_boundary_ok && right_boundary_ok) {
+                return true;
+            }
+
+            search_start = it + 1;
+        }
+    }
+    return false;
+}
+
 int main() {
     ix::WebSocket webSocket;
 
@@ -14,7 +55,11 @@ int main() {
 
     std::cout << "Connecting to " << url << "..." << std::endl;
 
-    webSocket.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg) {
+    // for testing % passing filter
+    // int total{0};
+    // int passed{0};
+
+    webSocket.setOnMessageCallback([/* &total, &passed */](const ix::WebSocketMessagePtr& msg) {
         if (msg->type == ix::WebSocketMessageType::Message) {
             const std::string& raw_json{msg->str};
 
@@ -22,23 +67,23 @@ int main() {
             simdjson::padded_string json_data(raw_json);
             simdjson::ondemand::document doc = parser.iterate(json_data);
 
-            /* don't need to filter non-english since keyword matching handles that, they are in english only
-            // filter out non-english posts
-            std::string_view primary_lang;
-            auto error = doc["commit"]["record"]["langs"].at(0).get_string().get(primary_lang);
-            if (error || primary_lang != "en") {
-                std::cout << "This is America mf speak english" << '\n';
-                return;
-            }
-            */
-
             std::string_view post_text;
             auto error = doc["commit"]["record"]["text"].get_string().get(post_text);
             if (error) {
                 return;
             }
 
-            std::cout << post_text << std::endl;
+            if (passes_filter(post_text)) {
+                std::cout << post_text << std::endl;
+                //std::cout << post_text << std::endl;
+                // passed++;
+                // total++;
+            } else {
+                // std::cout << "Filtered" << std::endl;
+                // total++;
+            }
+
+
         } else if (msg->type == ix::WebSocketMessageType::Open) {
             std::cout << "Connection established" << std::endl;
             std::cout << "> " << std::flush;
@@ -51,8 +96,9 @@ int main() {
     webSocket.start();
 
     for (;;) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     return 0;
 }
+
