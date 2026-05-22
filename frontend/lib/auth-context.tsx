@@ -9,11 +9,12 @@ import {
   type ReactNode,
 } from "react"
 import {
-  clearAccessToken,
+  AUTH_SESSION_EXPIRED_EVENT,
+  clearAuthStorage,
   createProfile,
   fetchCurrentUser,
   fetchProfiles,
-  getAccessToken,
+  getValidAccessToken,
   getStoredCurrentProfileId,
   loginWithPassword,
   mapApiProfileToAppProfile,
@@ -82,6 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyProfiles(mapped)
   }, [applyProfiles])
 
+  const resetSession = useCallback(() => {
+    clearAuthStorage()
+    setUser(null)
+    setProfiles([])
+    setCurrentProfileId(null)
+  }, [])
+
   const loadSession = useCallback(async () => {
     const apiUser = await fetchCurrentUser()
     setUser(mapApiUserToAppUser(apiUser))
@@ -96,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshProfiles])
 
   useEffect(() => {
-    const token = getAccessToken()
+    const token = getValidAccessToken()
     if (!token) {
       setIsInitializing(false)
       return
@@ -104,16 +112,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     loadSession()
       .catch(() => {
-        clearAccessToken()
-        setUser(null)
-        setProfiles([])
-        setCurrentProfileId(null)
-        setStoredCurrentProfileId(null)
+        resetSession()
       })
       .finally(() => {
         setIsInitializing(false)
       })
-  }, [loadSession])
+  }, [loadSession, resetSession])
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      resetSession()
+    }
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired)
+    return () => {
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired)
+    }
+  }, [resetSession])
 
   const establishSession = useCallback(
     async (accessToken: string, displayName?: string) => {
@@ -153,12 +168,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const logout = useCallback(() => {
-    clearAccessToken()
-    setStoredCurrentProfileId(null)
-    setUser(null)
-    setProfiles([])
-    setCurrentProfileId(null)
-  }, [])
+    resetSession()
+  }, [resetSession])
 
   const setCurrentProfile = useCallback((profileId: string) => {
     setCurrentProfileId(profileId)

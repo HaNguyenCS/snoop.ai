@@ -35,7 +35,7 @@ export function AppSidebar() {
 
   const handleLogout = () => {
     logout()
-    router.push("/")
+    router.replace("/login")
   }
 
   return (
