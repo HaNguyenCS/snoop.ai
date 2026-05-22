@@ -29,6 +29,8 @@ class CompetitorSuggestionResponse(BaseModel):
 
 
 class MonitoringProfileCreate(BaseModel):
+    profile_name: str
+    phone_number: str
     company_name: str
     industry: str
     product_description: str
@@ -37,6 +39,8 @@ class MonitoringProfileCreate(BaseModel):
 
 class MonitoringProfileResponse(BaseModel):
     id: int
+    profile_name: str
+    phone_number: str
     company_name: str
     industry: str
     product_description: str

@@ -36,6 +36,9 @@ class MonitoringProfile(Base):
     product_description = Column(Text, nullable=False)
     competitors_json = Column(Text, nullable=False)
     keywords_json = Column(Text, nullable=False)
+    profile_name = Column(String, nullable=False)
+    phone_number = Column(String, nullable=False)
+
 
     created_at = Column(
         DateTime,

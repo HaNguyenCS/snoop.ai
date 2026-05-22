@@ -26,6 +26,8 @@ EXPORT_DIR = "data/keyword_exports"
 def save_keyword_export(
     user_id: int,
     profile_id: int,
+    profile_name: str,
+    phone_number: str,
     keywords: dict,
 ) -> str:
     os.makedirs(EXPORT_DIR, exist_ok=True)
@@ -36,6 +38,8 @@ def save_keyword_export(
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "user_id": user_id,
         "profile_id": profile_id,
+        "profile_name": profile_name,
+        "phone_number": phone_number,
         "keywords": keywords,
     }
 
@@ -48,6 +52,8 @@ def save_keyword_export(
 def profile_to_response(profile: MonitoringProfile) -> dict:
     return {
         "id": profile.id,
+        "profile_name": profile.profile_name,
+        "phone_number": profile.phone_number,
         "company_name": profile.company_name,
         "industry": profile.industry,
         "product_description": profile.product_description,
@@ -86,6 +92,8 @@ def create_profile(
     )
 
     profile = MonitoringProfile(
+        profile_name=profile_data.profile_name,
+        phone_number=profile_data.phone_number,
         company_name=profile_data.company_name,
         industry=profile_data.industry,
         product_description=profile_data.product_description,
@@ -101,6 +109,8 @@ def create_profile(
     save_keyword_export(
         user_id=current_user.id,
         profile_id=profile.id,
+        profile_name=profile.profile_name,
+        phone_number=profile.phone_number,
         keywords=keywords,
     )
 
