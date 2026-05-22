@@ -263,7 +263,6 @@ export function mapApiProfileToAppProfile(
     companyName: apiProfile.company_name,
     industry: apiProfile.industry,
     productDescription: apiProfile.product_description,
-    website: "",
     competitors: apiProfile.competitors,
     keywords: keywordsToStringList(apiProfile.keywords),
     createdAt: now,

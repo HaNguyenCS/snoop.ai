@@ -35,7 +35,6 @@ export function ProfileForm({
     companyName: initialData?.companyName || "",
     industry: initialData?.industry || "",
     productDescription: initialData?.productDescription || "",
-    website: initialData?.website || "",
     competitors: initialData?.competitors?.join("\n") || "",
     keywords: initialData?.keywords?.join(", ") || "",
   })
@@ -49,7 +48,6 @@ export function ProfileForm({
       companyName: formData.companyName,
       industry: formData.industry,
       productDescription: formData.productDescription,
-      website: formData.website,
       competitors: formData.competitors
         .split("\n")
         .map((c) => c.trim())
@@ -142,21 +140,6 @@ export function ProfileForm({
           Used for competitor suggestions and keyword generation
         </p>
       </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="website" className="font-sketch text-lg">
-          Company Website
-        </Label>
-        <Input
-          id="website"
-          type="url"
-          value={formData.website}
-          onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-          placeholder="https://example.com"
-          className="sketch-border-thin"
-        />
-      </div>
-
       <div className="space-y-2">
         <Label htmlFor="competitors" className="font-sketch text-lg">
           Competitors to Track *
