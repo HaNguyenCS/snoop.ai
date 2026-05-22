@@ -144,7 +144,6 @@ export function ProfileForm({
     companyName: initialData?.companyName || "",
     industry: initialData?.industry || "",
     productDescription: initialData?.productDescription || "",
-    keywords: initialData?.keywords?.join(", ") || "",
   })
   const [competitorChips, setCompetitorChips] = useState<string[]>(
     initialData?.competitors?.map((c) => c.trim()).filter(Boolean) ?? [],
@@ -194,13 +193,7 @@ export function ProfileForm({
       industry: formData.industry,
       productDescription: formData.productDescription,
       competitors,
-      keywords:
-        mode === "edit"
-          ? formData.keywords
-              .split(",")
-              .map((k) => k.trim())
-              .filter(Boolean)
-          : [],
+      keywords: mode === "edit" ? (initialData?.keywords ?? []) : [],
     })
   }
 
@@ -298,28 +291,6 @@ export function ProfileForm({
           Type a name, then press comma or Enter. Backspace removes the last tag.
         </p>
       </div>
-
-      {mode === "create" ? (
-        <p className="text-xs text-ink/50 p-3 bg-muted/50 rounded-md sketch-border-thin">
-          Keywords are generated automatically from your competitors when the profile is created.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          <Label htmlFor="keywords" className="font-sketch text-lg">
-            Keywords to Monitor
-          </Label>
-          <Textarea
-            id="keywords"
-            value={formData.keywords}
-            onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-            placeholder="AI infrastructure, model serving, MLOps"
-            className="sketch-border-thin min-h-[80px]"
-          />
-          <p className="text-xs text-ink/50">
-            Edits are saved locally only until profile updates are supported by the API.
-          </p>
-        </div>
-      )}
 
       <div className="flex gap-3 pt-4">
         <Button
