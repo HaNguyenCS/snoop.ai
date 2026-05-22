@@ -283,6 +283,16 @@ export async function createProfile(
   })
 }
 
+export async function updateProfile(
+  profileId: string | number,
+  payload: MonitoringProfileCreatePayload,
+): Promise<MonitoringProfileResponse> {
+  return apiFetch<MonitoringProfileResponse>(`/profiles/${profileId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function suggestCompetitors(payload: {
   company_name: string
   industry: string

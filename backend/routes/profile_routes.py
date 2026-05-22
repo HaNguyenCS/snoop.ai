@@ -20,6 +20,7 @@ from app.schemas import (
     KeywordExportUpdate,
     MonitoringProfileCreate,
     MonitoringProfileResponse,
+    MonitoringProfileUpdate,
 )
 
 
@@ -136,6 +137,36 @@ def get_one_profile(
     current_user: User = Depends(get_current_user),
 ):
     profile = get_owned_profile(profile_id, db, current_user)
+    return profile_to_response(profile)
+
+
+@router.put("/{profile_id}", response_model=MonitoringProfileResponse)
+def update_profile(
+    profile_id: int,
+    profile_data: MonitoringProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = get_owned_profile(profile_id, db, current_user)
+
+    profile.profile_name = profile_data.profile_name
+    profile.phone_number = profile_data.phone_number
+    profile.company_name = profile_data.company_name
+    profile.industry = profile_data.industry
+    profile.product_description = profile_data.product_description
+    profile.competitors_json = json.dumps(profile_data.competitors)
+
+    keywords_inner = generate_keywords(
+        company_name=profile_data.company_name,
+        industry=profile_data.industry,
+        product_description=profile_data.product_description,
+        competitors=profile_data.competitors,
+    )
+    save_keyword_export(profile, current_user.id, keywords_inner)
+
+    db.commit()
+    db.refresh(profile)
+
     return profile_to_response(profile)
 
 

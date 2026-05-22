@@ -37,6 +37,10 @@ class MonitoringProfileCreate(BaseModel):
     competitors: List[str]
 
 
+class MonitoringProfileUpdate(MonitoringProfileCreate):
+    pass
+
+
 class MonitoringProfileResponse(BaseModel):
     id: int
     profile_name: str
