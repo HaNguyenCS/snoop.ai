@@ -1,11 +1,33 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
-import { mockProfiles, mockUser, type Profile, type User } from "@/lib/mock-data"
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from "react"
+import {
+  clearAccessToken,
+  createProfile,
+  fetchCurrentUser,
+  fetchProfiles,
+  getAccessToken,
+  getStoredCurrentProfileId,
+  loginWithPassword,
+  mapApiProfileToAppProfile,
+  mapApiUserToAppUser,
+  setAccessToken,
+  setStoredCurrentProfileId,
+  signupWithEmail,
+} from "@/lib/api"
+import type { Profile, User } from "@/lib/mock-data"
 
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
+  isInitializing: boolean
   currentProfile: Profile | null
   profiles: Profile[]
   login: (email: string, password: string) => Promise<void>
@@ -13,133 +35,167 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
   setCurrentProfile: (profileId: string) => void
-  addProfile: (profile: Omit<Profile, "id" | "createdAt" | "updatedAt">) => Profile
+  addProfile: (
+    profile: Omit<Profile, "id" | "createdAt" | "updatedAt">,
+  ) => Promise<Profile>
   updateProfile: (id: string, data: Partial<Profile>) => void
   updateUser: (data: Partial<User>) => void
+  refreshProfiles: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  // TODO: Replace with actual auth state management when backend is ready
-  const [user, setUser] = useState<User | null>(null)
-  const [profiles, setProfiles] = useState<Profile[]>(mockProfiles)
-  const [currentProfileId, setCurrentProfileId] = useState<string | null>(null)
+function pickCurrentProfileId(
+  profiles: Profile[],
+  preferredId: string | null,
+): string | null {
+  if (profiles.length === 0) return null
+  if (preferredId && profiles.some((p) => p.id === preferredId)) {
+    return preferredId
+  }
+  return profiles[0].id
+}
 
-  const currentProfile = currentProfileId 
-    ? profiles.find((p) => p.id === currentProfileId) || null 
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [currentProfileId, setCurrentProfileId] = useState<string | null>(null)
+  const [isInitializing, setIsInitializing] = useState(true)
+
+  const currentProfile = currentProfileId
+    ? profiles.find((p) => p.id === currentProfileId) || null
     : null
 
-  const login = useCallback(async (email: string, password: string) => {
-    // TODO: Implement actual login API call
-    // const response = await fetch('/api/auth/login', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ email, password }),
-    // })
-    // const data = await response.json()
-    
-    // Mock login - simulate delay
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    setUser(mockUser)
-    setCurrentProfileId(mockUser.defaultProfileId)
+  const applyProfiles = useCallback((loaded: Profile[], preferredId?: string | null) => {
+    setProfiles(loaded)
+    const nextId = pickCurrentProfileId(
+      loaded,
+      preferredId ?? getStoredCurrentProfileId(),
+    )
+    setCurrentProfileId(nextId)
+    setStoredCurrentProfileId(nextId)
   }, [])
+
+  const refreshProfiles = useCallback(async () => {
+    const apiProfiles = await fetchProfiles()
+    const mapped = apiProfiles.map((p) => mapApiProfileToAppProfile(p))
+    applyProfiles(mapped)
+  }, [applyProfiles])
+
+  const loadSession = useCallback(async () => {
+    const apiUser = await fetchCurrentUser()
+    setUser(mapApiUserToAppUser(apiUser))
+
+    try {
+      await refreshProfiles()
+    } catch {
+      setProfiles([])
+      setCurrentProfileId(null)
+      setStoredCurrentProfileId(null)
+    }
+  }, [refreshProfiles])
+
+  useEffect(() => {
+    const token = getAccessToken()
+    if (!token) {
+      setIsInitializing(false)
+      return
+    }
+
+    loadSession()
+      .catch(() => {
+        clearAccessToken()
+        setUser(null)
+        setProfiles([])
+        setCurrentProfileId(null)
+        setStoredCurrentProfileId(null)
+      })
+      .finally(() => {
+        setIsInitializing(false)
+      })
+  }, [loadSession])
+
+  const establishSession = useCallback(
+    async (accessToken: string, displayName?: string) => {
+      setAccessToken(accessToken)
+      const apiUser = await fetchCurrentUser()
+      setUser(mapApiUserToAppUser(apiUser, displayName))
+
+      try {
+        await refreshProfiles()
+      } catch {
+        setProfiles([])
+        setCurrentProfileId(null)
+        setStoredCurrentProfileId(null)
+      }
+    },
+    [refreshProfiles],
+  )
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const { access_token } = await loginWithPassword(email, password)
+      await establishSession(access_token)
+    },
+    [establishSession],
+  )
 
   const loginWithGoogle = useCallback(async () => {
-    // TODO: Implement Google OAuth
-    // window.location.href = '/api/auth/google'
-    
-    // Mock Google login
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    setUser(mockUser)
-    setCurrentProfileId(mockUser.defaultProfileId)
+    throw new Error("Google sign-in is not available yet. Use email and password.")
   }, [])
 
-  const signup = useCallback(async (name: string, email: string, password: string) => {
-    // TODO: Implement actual signup API call
-    // const response = await fetch('/api/auth/signup', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ name, email, password }),
-    // })
-    // const data = await response.json()
-    
-    // Mock signup
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      name,
-      email,
-      defaultProfileId: null,
-      notificationPreferences: {
-        email: true,
-        push: true,
-        weekly: false,
-      },
-      theme: "light",
-    }
-    setUser(newUser)
-  }, [])
+  const signup = useCallback(
+    async (name: string, email: string, password: string) => {
+      const { access_token } = await signupWithEmail(email, password)
+      await establishSession(access_token, name)
+    },
+    [establishSession],
+  )
 
   const logout = useCallback(() => {
-    // TODO: Implement actual logout API call
-    // await fetch('/api/auth/logout', { method: 'POST' })
-    
+    clearAccessToken()
+    setStoredCurrentProfileId(null)
     setUser(null)
+    setProfiles([])
     setCurrentProfileId(null)
   }, [])
 
   const setCurrentProfile = useCallback((profileId: string) => {
     setCurrentProfileId(profileId)
-    // TODO: Persist selection to backend
-    // await fetch('/api/user/default-profile', {
-    //   method: 'PUT',
-    //   body: JSON.stringify({ profileId }),
-    // })
+    setStoredCurrentProfileId(profileId)
   }, [])
 
-  const addProfile = useCallback((profileData: Omit<Profile, "id" | "createdAt" | "updatedAt">) => {
-    // TODO: Implement actual API call
-    // const response = await fetch('/api/profiles', {
-    //   method: 'POST',
-    //   body: JSON.stringify(profileData),
-    // })
-    // const newProfile = await response.json()
-    
-    const newProfile: Profile = {
-      ...profileData,
-      id: `profile-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-    setProfiles((prev) => [...prev, newProfile])
-    setCurrentProfileId(newProfile.id)
-    return newProfile
-  }, [])
+  const addProfile = useCallback(
+    async (profileData: Omit<Profile, "id" | "createdAt" | "updatedAt">) => {
+      const created = await createProfile({
+        company_name: profileData.companyName,
+        industry: profileData.industry.trim() || "General",
+        product_description: profileData.productDescription.trim(),
+        competitors: profileData.competitors,
+      })
+
+      const mapped = mapApiProfileToAppProfile(created, profileData.profileName)
+
+      setProfiles((prev) => [...prev, mapped])
+      setCurrentProfileId(mapped.id)
+      setStoredCurrentProfileId(mapped.id)
+
+      return mapped
+    },
+    [],
+  )
 
   const updateProfile = useCallback((id: string, data: Partial<Profile>) => {
-    // TODO: Implement actual API call
-    // await fetch(`/api/profiles/${id}`, {
-    //   method: 'PUT',
-    //   body: JSON.stringify(data),
-    // })
-    
     setProfiles((prev) =>
       prev.map((p) =>
         p.id === id
           ? { ...p, ...data, updatedAt: new Date().toISOString() }
-          : p
-      )
+          : p,
+      ),
     )
   }, [])
 
   const updateUser = useCallback((data: Partial<User>) => {
-    // TODO: Implement actual API call
-    // await fetch('/api/user', {
-    //   method: 'PUT',
-    //   body: JSON.stringify(data),
-    // })
-    
     setUser((prev) => (prev ? { ...prev, ...data } : null))
   }, [])
 
@@ -148,6 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
+        isInitializing,
         currentProfile,
         profiles,
         login,
@@ -158,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         addProfile,
         updateProfile,
         updateUser,
+        refreshProfiles,
       }}
     >
       {children}

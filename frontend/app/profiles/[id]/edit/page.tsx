@@ -75,6 +75,7 @@ export default function EditProfilePage({ params }: { params: Promise<{ id: stri
           </div>
 
           <ProfileForm
+            mode="edit"
             initialData={profile}
             onSubmit={handleSubmit}
             onCancel={handleCancel}

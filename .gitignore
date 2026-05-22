@@ -73,6 +73,8 @@ Testing/
 # Python / Backend
 venv/
 .env
+.env.local
+frontend/.env.local
 data/
 __pycache__/
 *.pyc

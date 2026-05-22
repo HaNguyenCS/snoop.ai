@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthCard } from "@/components/sketch/auth-card"
+import { ApiError } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 
 export default function SignupPage() {
@@ -24,13 +25,16 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
-      // TODO: Add proper validation (password strength, email format)
-      // TODO: Connect to backend signup API
       await signup(name, email, password)
-      // After signup, route to create first profile
       router.push("/profiles/new")
     } catch (err) {
-      setError("Failed to create account. Please try again.")
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError("Failed to create account. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -43,7 +47,7 @@ export default function SignupPage() {
       await loginWithGoogle()
       router.push("/profiles/new")
     } catch (err) {
-      setError("Google signup failed")
+      setError(err instanceof Error ? err.message : "Google signup failed")
     } finally {
       setIsLoading(false)
     }
@@ -94,9 +98,9 @@ export default function SignupPage() {
             placeholder="Create a password"
             className="sketch-border-thin"
             required
-            minLength={8}
+            minLength={6}
           />
-          <p className="text-xs text-ink/50">Must be at least 8 characters</p>
+          <p className="text-xs text-ink/50">Must be at least 6 characters</p>
         </div>
 
         <Button

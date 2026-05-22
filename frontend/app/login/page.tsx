@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthCard } from "@/components/sketch/auth-card"
+import { ApiError } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 
 export default function LoginPage() {
@@ -23,12 +24,16 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // TODO: Add proper validation
-      // TODO: Connect to backend auth API
       await login(email, password)
       router.push("/dashboard")
     } catch (err) {
-      setError("Invalid email or password")
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError("Invalid email or password")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -41,7 +46,7 @@ export default function LoginPage() {
       await loginWithGoogle()
       router.push("/dashboard")
     } catch (err) {
-      setError("Google login failed")
+      setError(err instanceof Error ? err.message : "Google login failed")
     } finally {
       setIsLoading(false)
     }
