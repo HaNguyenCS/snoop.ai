@@ -69,3 +69,10 @@ Testing/
 
 # IDE / Text Editors
 .vscode/
+
+venv/
+.venv/
+.env
+data/
+__pycache__/
+market_monitor.db

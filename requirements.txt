@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+python-jose
+pwdlib[argon2]
+python-multipart
+pydantic[email]
+openai
+groq
+python-dotenv
