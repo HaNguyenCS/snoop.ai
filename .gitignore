@@ -70,7 +70,20 @@ Testing/
 # IDE / Text Editors
 .vscode/
 
+# Python / Backend
 venv/
 .env
 data/
 __pycache__/
+*.pyc
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+
+# Next.js
+.next/
+frontend/.next/
+
+# Mac
+.DS_Store
