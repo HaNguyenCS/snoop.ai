@@ -11,6 +11,7 @@ import { AppSidebar } from "@/components/sketch/app-sidebar"
 import { DashboardHeader } from "@/components/sketch/dashboard-header"
 import { useAuth } from "@/lib/auth-context"
 import { mockDashboardData, type ProfileDashboardData } from "@/lib/mock-data"
+import { CompetitorFeed } from "@/components/dashboard/competitor-feed"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -67,7 +68,20 @@ export default function DashboardPage() {
 
           {/* Main grid */}
           <div className="grid lg:grid-cols-2 gap-6">
-            <CompetitorFeed updates={dashboardData.competitorUpdates} />
+            <div className="bg-card sketch-border p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-sketch text-2xl font-bold text-ink">
+                  Competitor Feed
+                </h3>
+                <Badge variant="outline" className="sketch-border-thin">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
+                  Live updates
+                </Badge>
+              </div>
+
+              <CompetitorFeed limit={5} currentProfile={currentProfile} />
+            </div>
+
             <div className="space-y-6">
               <FilteringFunnelMini funnel={dashboardData.filteringFunnel} />
               <AiInsightsPanel insights={dashboardData.aiInsights} />
@@ -113,55 +127,6 @@ function KpiCards({ stats }: { stats: ProfileDashboardData["stats"] }) {
       ))}
     </div>
   )
-}
-
-function CompetitorFeed({ updates }: { updates: ProfileDashboardData["competitorUpdates"] }) {
-  return (
-    <div className="bg-card sketch-border p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-sketch text-2xl font-bold text-ink">Competitor Feed</h3>
-        <Badge variant="outline" className="sketch-border-thin">
-          <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
-          Live updates
-        </Badge>
-      </div>
-      
-      <div className="space-y-3">
-        {updates.map((update) => (
-          <div 
-            key={update.id} 
-            className="p-4 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors"
-            style={{ borderLeft: '3px solid', borderColor: getScoreColor(update.score) }}
-          >
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div>
-                <span className="font-semibold text-ink">{update.company}</span>
-                <span className="text-ink/50 text-sm ml-2">{update.time}</span>
-              </div>
-              <div className={`
-                font-sketch text-lg font-bold px-2 py-0.5 rounded
-                ${update.score >= 90 ? 'text-red-600 bg-red-50' : ''}
-                ${update.score >= 75 && update.score < 90 ? 'text-orange-600 bg-orange-50' : ''}
-                ${update.score < 75 ? 'text-ink/60 bg-secondary' : ''}
-              `}>
-                {update.score}
-              </div>
-            </div>
-            <p className="text-sm text-ink mb-2">{update.event}</p>
-            <p className="text-sm text-ink/60 italic bg-highlight/50 px-3 py-2 rounded">
-              AI: &quot;{update.insight}&quot;
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function getScoreColor(score: number) {
-  if (score >= 90) return '#dc2626'
-  if (score >= 75) return '#ea580c'
-  return '#9ca3af'
 }
 
 function FilteringFunnelMini({ funnel }: { funnel: ProfileDashboardData["filteringFunnel"] }) {
