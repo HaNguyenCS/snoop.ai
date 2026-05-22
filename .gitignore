@@ -75,3 +75,4 @@ venv/
 .env
 data/
 __pycache__/
+market_monitor.db
