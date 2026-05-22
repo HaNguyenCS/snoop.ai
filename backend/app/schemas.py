@@ -46,3 +46,16 @@ class MonitoringProfileResponse(BaseModel):
     product_description: str
     competitors: List[str]
     keywords: dict
+
+
+class KeywordExportDocument(BaseModel):
+    exported_at: str
+    user_id: int
+    profile_id: int
+    profile_name: str
+    phone_number: str
+    keywords: dict
+
+
+class KeywordExportUpdate(BaseModel):
+    keywords: dict

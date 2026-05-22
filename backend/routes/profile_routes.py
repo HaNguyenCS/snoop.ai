@@ -1,6 +1,4 @@
 import json
-import os
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -8,11 +6,18 @@ from sqlalchemy.orm import Session
 from app.ai_client import suggest_competitors_with_ai
 from app.auth import get_current_user
 from app.database import get_db
+from app.keyword_export import (
+    get_inner_keywords,
+    load_keyword_export,
+    save_keyword_export,
+)
 from app.keyword_generator import generate_keywords
 from app.models import MonitoringProfile, User
 from app.schemas import (
     CompetitorSuggestionRequest,
     CompetitorSuggestionResponse,
+    KeywordExportDocument,
+    KeywordExportUpdate,
     MonitoringProfileCreate,
     MonitoringProfileResponse,
 )
@@ -20,36 +25,33 @@ from app.schemas import (
 
 router = APIRouter(prefix="/profiles", tags=["Monitoring Profiles"])
 
-EXPORT_DIR = "data/keyword_exports"
 
-
-def save_keyword_export(
-    user_id: int,
+def get_owned_profile(
     profile_id: int,
-    profile_name: str,
-    phone_number: str,
-    keywords: dict,
-) -> str:
-    os.makedirs(EXPORT_DIR, exist_ok=True)
+    db: Session,
+    current_user: User,
+) -> MonitoringProfile:
+    profile = (
+        db.query(MonitoringProfile)
+        .filter(
+            MonitoringProfile.id == profile_id,
+            MonitoringProfile.user_id == current_user.id,
+        )
+        .first()
+    )
 
-    path = f"{EXPORT_DIR}/user_{user_id}_profile_{profile_id}_keywords.json"
+    if profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile not found",
+        )
 
-    export_data = {
-        "exported_at": datetime.now(timezone.utc).isoformat(),
-        "user_id": user_id,
-        "profile_id": profile_id,
-        "profile_name": profile_name,
-        "phone_number": phone_number,
-        "keywords": keywords,
-    }
-
-    with open(path, "w", encoding="utf-8") as file:
-        json.dump(export_data, file, indent=2)
-
-    return path
+    return profile
 
 
 def profile_to_response(profile: MonitoringProfile) -> dict:
+    stored = json.loads(profile.keywords_json)
+
     return {
         "id": profile.id,
         "profile_name": profile.profile_name,
@@ -58,7 +60,7 @@ def profile_to_response(profile: MonitoringProfile) -> dict:
         "industry": profile.industry,
         "product_description": profile.product_description,
         "competitors": json.loads(profile.competitors_json),
-        "keywords": json.loads(profile.keywords_json),
+        "keywords": get_inner_keywords(stored),
     }
 
 
@@ -84,7 +86,7 @@ def create_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    keywords = generate_keywords(
+    keywords_inner = generate_keywords(
         company_name=profile_data.company_name,
         industry=profile_data.industry,
         product_description=profile_data.product_description,
@@ -98,21 +100,17 @@ def create_profile(
         industry=profile_data.industry,
         product_description=profile_data.product_description,
         competitors_json=json.dumps(profile_data.competitors),
-        keywords_json=json.dumps(keywords),
+        keywords_json="{}",
         user_id=current_user.id,
     )
 
     db.add(profile)
+    db.flush()
+
+    save_keyword_export(profile, current_user.id, keywords_inner)
+
     db.commit()
     db.refresh(profile)
-
-    save_keyword_export(
-        user_id=current_user.id,
-        profile_id=profile.id,
-        profile_name=profile.profile_name,
-        phone_number=profile.phone_number,
-        keywords=keywords,
-    )
 
     return profile_to_response(profile)
 
@@ -137,43 +135,60 @@ def get_one_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    profile = (
-        db.query(MonitoringProfile)
-        .filter(
-            MonitoringProfile.id == profile_id,
-            MonitoringProfile.user_id == current_user.id,
-        )
-        .first()
-    )
-
-    if profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profile not found",
-        )
-
+    profile = get_owned_profile(profile_id, db, current_user)
     return profile_to_response(profile)
 
 
-@router.get("/{profile_id}/keywords")
+@router.get("/{profile_id}/keywords", response_model=KeywordExportDocument)
 def get_profile_keywords(
     profile_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    profile = (
-        db.query(MonitoringProfile)
-        .filter(
-            MonitoringProfile.id == profile_id,
-            MonitoringProfile.user_id == current_user.id,
-        )
-        .first()
+    profile = get_owned_profile(profile_id, db, current_user)
+    return load_keyword_export(profile, current_user.id)
+
+
+@router.post(
+    "/{profile_id}/keywords",
+    response_model=KeywordExportDocument,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_profile_keywords(
+    profile_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create or regenerate the keyword export for this profile (one per profile)."""
+    profile = get_owned_profile(profile_id, db, current_user)
+    competitors = json.loads(profile.competitors_json)
+
+    keywords_inner = generate_keywords(
+        company_name=profile.company_name,
+        industry=profile.industry,
+        product_description=profile.product_description,
+        competitors=competitors,
     )
 
-    if profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profile not found",
-        )
+    export = save_keyword_export(profile, current_user.id, keywords_inner)
+    db.commit()
+    db.refresh(profile)
 
-    return json.loads(profile.keywords_json)
+    return export
+
+
+@router.put("/{profile_id}/keywords", response_model=KeywordExportDocument)
+def update_profile_keywords(
+    profile_id: int,
+    body: KeywordExportUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Replace the inner keywords payload; metadata is refreshed from the profile."""
+    profile = get_owned_profile(profile_id, db, current_user)
+
+    export = save_keyword_export(profile, current_user.id, body.keywords)
+    db.commit()
+    db.refresh(profile)
+
+    return export

@@ -297,3 +297,37 @@ export async function suggestCompetitors(payload: {
   )
   return result.suggested_competitors
 }
+
+export type KeywordExportDocument = {
+  exported_at: string
+  user_id: number
+  profile_id: number
+  profile_name: string
+  phone_number: string
+  keywords: Record<string, unknown>
+}
+
+export async function fetchProfileKeywordExport(
+  profileId: string | number,
+): Promise<KeywordExportDocument> {
+  return apiFetch<KeywordExportDocument>(`/profiles/${profileId}/keywords`)
+}
+
+/** Regenerate keywords from the profile's current fields (one export per profile). */
+export async function createProfileKeywords(
+  profileId: string | number,
+): Promise<KeywordExportDocument> {
+  return apiFetch<KeywordExportDocument>(`/profiles/${profileId}/keywords`, {
+    method: "POST",
+  })
+}
+
+export async function updateProfileKeywords(
+  profileId: string | number,
+  keywords: Record<string, unknown>,
+): Promise<KeywordExportDocument> {
+  return apiFetch<KeywordExportDocument>(`/profiles/${profileId}/keywords`, {
+    method: "PUT",
+    body: JSON.stringify({ keywords }),
+  })
+}
