@@ -76,7 +76,8 @@ venv/
 .env
 .env.local
 frontend/.env.local
-data/
+backend/data/
+backend/market_monitor.db
 __pycache__/
 *.pyc
 
@@ -89,7 +90,4 @@ frontend/node_modules/
 frontend/.next/
 
 # Mac
-.DS_Store
-
-market_monitor.db
 .DS_Store

@@ -103,7 +103,12 @@ export default function ProfilesPage() {
                       {profile.industry}
                     </Badge>
                   </div>
-                  <p className="text-xs text-ink/50">{profile.website}</p>
+                  {profile.phoneNumber && (
+                    <p className="text-xs text-ink/50">{profile.phoneNumber}</p>
+                  )}
+                  {profile.website && (
+                    <p className="text-xs text-ink/50">{profile.website}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-4">

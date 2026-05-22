@@ -4,6 +4,7 @@
 export interface Profile {
   id: string
   profileName: string
+  phoneNumber: string
   companyName: string
   industry: string
   productDescription: string
@@ -73,6 +74,7 @@ export const mockProfiles: Profile[] = [
   {
     id: "profile-1",
     profileName: "Acme AI Monitoring",
+    phoneNumber: "+1 555-0100",
     companyName: "Acme AI",
     industry: "AI/ML Infrastructure",
     productDescription: "Enterprise AI infrastructure and model serving platform.",
@@ -85,6 +87,7 @@ export const mockProfiles: Profile[] = [
   {
     id: "profile-2",
     profileName: "LaunchFlow Watch",
+    phoneNumber: "+1 555-0101",
     companyName: "LaunchFlow",
     industry: "Developer Tools",
     productDescription: "Deployment and CI/CD platform for modern teams.",
@@ -97,6 +100,7 @@ export const mockProfiles: Profile[] = [
   {
     id: "profile-3",
     profileName: "Northbeam Intel",
+    phoneNumber: "+1 555-0102",
     companyName: "Northbeam",
     industry: "Marketing Analytics",
     productDescription: "Marketing attribution and analytics for e-commerce brands.",

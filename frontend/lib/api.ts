@@ -150,6 +150,8 @@ export function mapApiUserToAppUser(
 
 export type MonitoringProfileResponse = {
   id: number
+  profile_name: string
+  phone_number: string
   company_name: string
   industry: string
   product_description: string
@@ -158,6 +160,8 @@ export type MonitoringProfileResponse = {
 }
 
 export type MonitoringProfileCreatePayload = {
+  profile_name: string
+  phone_number: string
   company_name: string
   industry: string
   product_description: string
@@ -199,16 +203,13 @@ function keywordsToStringList(keywords: Record<string, unknown>): string[] {
 
 export function mapApiProfileToAppProfile(
   apiProfile: MonitoringProfileResponse,
-  profileName?: string,
 ): Profile {
   const now = new Date().toISOString()
-  const label =
-    profileName?.trim() ||
-    `${apiProfile.company_name} Monitoring`
 
   return {
     id: String(apiProfile.id),
-    profileName: label,
+    profileName: apiProfile.profile_name,
+    phoneNumber: apiProfile.phone_number,
     companyName: apiProfile.company_name,
     industry: apiProfile.industry,
     productDescription: apiProfile.product_description,

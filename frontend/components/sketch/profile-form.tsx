@@ -31,6 +31,7 @@ export function ProfileForm({
 }: ProfileFormProps) {
   const [formData, setFormData] = useState({
     profileName: initialData?.profileName || "",
+    phoneNumber: initialData?.phoneNumber || "",
     companyName: initialData?.companyName || "",
     industry: initialData?.industry || "",
     productDescription: initialData?.productDescription || "",
@@ -44,6 +45,7 @@ export function ProfileForm({
 
     onSubmit({
       profileName: formData.profileName,
+      phoneNumber: formData.phoneNumber,
       companyName: formData.companyName,
       industry: formData.industry,
       productDescription: formData.productDescription,
@@ -77,6 +79,21 @@ export function ProfileForm({
           required
         />
         <p className="text-xs text-ink/50">A name to identify this monitoring profile</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="phoneNumber" className="font-sketch text-lg">
+          Phone Number *
+        </Label>
+        <Input
+          id="phoneNumber"
+          type="tel"
+          value={formData.phoneNumber}
+          onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+          placeholder="e.g., +1 555-123-4567"
+          className="sketch-border-thin"
+          required
+        />
       </div>
 
       <div className="space-y-2">

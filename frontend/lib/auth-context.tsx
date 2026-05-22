@@ -168,13 +168,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const addProfile = useCallback(
     async (profileData: Omit<Profile, "id" | "createdAt" | "updatedAt">) => {
       const created = await createProfile({
+        profile_name: profileData.profileName.trim(),
+        phone_number: profileData.phoneNumber.trim(),
         company_name: profileData.companyName,
         industry: profileData.industry.trim() || "General",
         product_description: profileData.productDescription.trim(),
         competitors: profileData.competitors,
       })
 
-      const mapped = mapApiProfileToAppProfile(created, profileData.profileName)
+      const mapped = mapApiProfileToAppProfile(created)
 
       setProfiles((prev) => [...prev, mapped])
       setCurrentProfileId(mapped.id)
