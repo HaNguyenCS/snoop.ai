@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useRef, useState, type KeyboardEvent } from "react"
+import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 import type { Profile } from "@/lib/mock-data"
 
 export type ProfileFormSubmitData = Omit<
@@ -21,6 +23,113 @@ interface ProfileFormProps {
   mode?: "create" | "edit"
 }
 
+function CompetitorChipInput({
+  chips,
+  inputValue,
+  onChipsChange,
+  onInputChange,
+  onCommitInput,
+  disabled,
+}: {
+  chips: string[]
+  inputValue: string
+  onChipsChange: (chips: string[]) => void
+  onInputChange: (value: string) => void
+  onCommitInput: () => void
+  disabled?: boolean
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const removeChip = useCallback(
+    (index: number) => {
+      onChipsChange(chips.filter((_, i) => i !== index))
+    },
+    [chips, onChipsChange],
+  )
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Backspace" && !inputValue && chips.length > 0) {
+      event.preventDefault()
+      onChipsChange(chips.slice(0, -1))
+      return
+    }
+
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault()
+      onCommitInput()
+    }
+  }
+
+  const handleChange = (value: string) => {
+    if (!value.includes(",")) {
+      onInputChange(value)
+      return
+    }
+
+    const parts = value.split(",")
+    const tail = parts[parts.length - 1]?.trimStart() ?? ""
+    const nextChips = [...chips]
+
+    for (const part of parts.slice(0, -1)) {
+      const trimmed = part.trim()
+      if (!trimmed) continue
+      if (nextChips.some((chip) => chip.toLowerCase() === trimmed.toLowerCase())) {
+        continue
+      }
+      nextChips.push(trimmed)
+    }
+
+    onChipsChange(nextChips)
+    onInputChange(tail)
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label="Competitors to track"
+      className={cn(
+        "sketch-border-thin flex min-h-[100px] w-full flex-wrap content-start items-start gap-2 rounded-md border bg-transparent px-3 py-2",
+        "focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50",
+        disabled && "pointer-events-none opacity-50",
+      )}
+      onClick={() => inputRef.current?.focus()}
+    >
+      {chips.map((competitor, index) => (
+        <span
+          key={`${competitor}-${index}`}
+          className="inline-flex items-center gap-1 rounded-md sketch-border-thin border bg-card px-2 py-1 text-sm text-ink"
+        >
+          <span className="font-medium">{competitor}</span>
+          <button
+            type="button"
+            aria-label={`Remove ${competitor}`}
+            className="rounded-sm p-0.5 text-ink/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
+            onClick={(event) => {
+              event.stopPropagation()
+              removeChip(index)
+            }}
+            disabled={disabled}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </span>
+      ))}
+      <input
+        ref={inputRef}
+        id="competitors"
+        type="text"
+        value={inputValue}
+        disabled={disabled}
+        onChange={(event) => handleChange(event.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={onCommitInput}
+        placeholder={chips.length === 0 ? "Type a competitor, then comma or Enter" : "Add another..."}
+        className="min-w-[140px] flex-1 self-start border-0 bg-transparent py-1 text-base outline-none placeholder:text-muted-foreground md:text-sm"
+      />
+    </div>
+  )
+}
+
 export function ProfileForm({
   initialData,
   onSubmit,
@@ -35,12 +144,48 @@ export function ProfileForm({
     companyName: initialData?.companyName || "",
     industry: initialData?.industry || "",
     productDescription: initialData?.productDescription || "",
-    competitors: initialData?.competitors?.join("\n") || "",
     keywords: initialData?.keywords?.join(", ") || "",
   })
+  const [competitorChips, setCompetitorChips] = useState<string[]>(
+    initialData?.competitors?.map((c) => c.trim()).filter(Boolean) ?? [],
+  )
+  const [competitorInput, setCompetitorInput] = useState("")
+
+  const commitCompetitorInput = useCallback(() => {
+    const trimmed = competitorInput.trim()
+    if (!trimmed) {
+      setCompetitorInput("")
+      return
+    }
+
+    setCompetitorChips((prev) => {
+      if (prev.some((chip) => chip.toLowerCase() === trimmed.toLowerCase())) {
+        return prev
+      }
+      return [...prev, trimmed]
+    })
+    setCompetitorInput("")
+  }, [competitorInput])
+
+  const buildCompetitorsList = useCallback(() => {
+    const pending = competitorInput.trim()
+    const list = [...competitorChips]
+    if (
+      pending &&
+      !list.some((chip) => chip.toLowerCase() === pending.toLowerCase())
+    ) {
+      list.push(pending)
+    }
+    return list
+  }, [competitorChips, competitorInput])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    const competitors = buildCompetitorsList()
+    if (competitors.length === 0) {
+      return
+    }
 
     onSubmit({
       profileName: formData.profileName,
@@ -48,10 +193,7 @@ export function ProfileForm({
       companyName: formData.companyName,
       industry: formData.industry,
       productDescription: formData.productDescription,
-      competitors: formData.competitors
-        .split("\n")
-        .map((c) => c.trim())
-        .filter(Boolean),
+      competitors,
       keywords:
         mode === "edit"
           ? formData.keywords
@@ -144,15 +286,17 @@ export function ProfileForm({
         <Label htmlFor="competitors" className="font-sketch text-lg">
           Competitors to Track *
         </Label>
-        <Textarea
-          id="competitors"
-          value={formData.competitors}
-          onChange={(e) => setFormData({ ...formData, competitors: e.target.value })}
-          placeholder={"Enter one competitor per line:\nCompetitorA\nCompetitorB"}
-          className="sketch-border-thin min-h-[100px]"
-          required
+        <CompetitorChipInput
+          chips={competitorChips}
+          inputValue={competitorInput}
+          onChipsChange={setCompetitorChips}
+          onInputChange={setCompetitorInput}
+          onCommitInput={commitCompetitorInput}
+          disabled={isLoading}
         />
-        <p className="text-xs text-ink/50">One competitor name per line</p>
+        <p className="text-xs text-ink/50">
+          Type a name, then press comma or Enter. Backspace removes the last tag.
+        </p>
       </div>
 
       {mode === "create" ? (
