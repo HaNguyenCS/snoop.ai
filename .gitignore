@@ -76,3 +76,4 @@ venv/
 data/
 __pycache__/
 market_monitor.db
+.DS_Store
