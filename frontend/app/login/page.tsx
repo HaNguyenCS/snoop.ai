@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,13 +10,20 @@ import { AuthCard } from "@/components/sketch/auth-card"
 import { ApiError } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
-  const { login, loginWithGoogle } = useAuth()
+  const searchParams = useSearchParams()
+  const { login, loginWithGoogle, isAuthenticated, isInitializing } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (isInitializing || !isAuthenticated) return
+    const next = searchParams.get("next")
+    router.replace(next?.startsWith("/") ? next : "/dashboard")
+  }, [isAuthenticated, isInitializing, router, searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,7 +32,8 @@ export default function LoginPage() {
 
     try {
       await login(email, password)
-      router.push("/dashboard")
+      const next = searchParams.get("next")
+      router.replace(next?.startsWith("/") ? next : "/dashboard")
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message)
@@ -140,5 +148,19 @@ export default function LoginPage() {
         </Link>
       </p>
     </AuthCard>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthCard title="Welcome back" subtitle="Sign in to continue snooping">
+          <p className="text-center text-ink/60">Loading...</p>
+        </AuthCard>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }

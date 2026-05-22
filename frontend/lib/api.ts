@@ -32,6 +32,52 @@ export function clearAccessToken(): void {
   localStorage.removeItem(TOKEN_STORAGE_KEY)
 }
 
+const CURRENT_PROFILE_STORAGE_KEY = "snoop_current_profile_id"
+
+export const AUTH_SESSION_EXPIRED_EVENT = "snoop:session-expired"
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const segment = token.split(".")[1]
+    if (!segment) return null
+    const base64 = segment.replace(/-/g, "+").replace(/_/g, "/")
+    const json = atob(base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "="))
+    return JSON.parse(json) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+/** Returns true if token is missing or past its exp claim (backend also enforces this). */
+export function isAccessTokenExpired(token: string | null): boolean {
+  if (!token) return true
+  const payload = decodeJwtPayload(token)
+  const exp = payload?.exp
+  if (typeof exp !== "number") return false
+  return Date.now() >= exp * 1000
+}
+
+export function getValidAccessToken(): string | null {
+  const token = getAccessToken()
+  if (!token || isAccessTokenExpired(token)) {
+    clearAuthStorage()
+    return null
+  }
+  return token
+}
+
+export function clearAuthStorage(): void {
+  clearAccessToken()
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(CURRENT_PROFILE_STORAGE_KEY)
+  }
+}
+
+export function notifySessionExpired(): void {
+  if (typeof window === "undefined") return
+  window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT))
+}
+
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
     const data = await response.json()
@@ -53,10 +99,12 @@ export async function apiFetch<T>(
   const headers = new Headers(options.headers)
 
   if (authenticated) {
-    const token = getAccessToken()
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`)
+    const token = getValidAccessToken()
+    if (!token) {
+      notifySessionExpired()
+      throw new ApiError("Session expired. Please log in again.", 401)
     }
+    headers.set("Authorization", `Bearer ${token}`)
   }
 
   if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
@@ -69,6 +117,10 @@ export async function apiFetch<T>(
   })
 
   if (!response.ok) {
+    if (response.status === 401 && authenticated) {
+      clearAuthStorage()
+      notifySessionExpired()
+    }
     throw new ApiError(await parseErrorMessage(response), response.status)
   }
 
@@ -167,8 +219,6 @@ export type MonitoringProfileCreatePayload = {
   product_description: string
   competitors: string[]
 }
-
-const CURRENT_PROFILE_STORAGE_KEY = "snoop_current_profile_id"
 
 export function getStoredCurrentProfileId(): string | null {
   if (typeof window === "undefined") return null
