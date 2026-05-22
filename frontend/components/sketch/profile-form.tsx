@@ -1,7 +1,8 @@
 "use client"
 
 import { useCallback, useRef, useState, type KeyboardEvent } from "react"
-import { X } from "lucide-react"
+import { Sparkles, X } from "lucide-react"
+import { ApiError, suggestCompetitors } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,6 +22,21 @@ interface ProfileFormProps {
   submitLabel?: string
   isLoading?: boolean
   mode?: "create" | "edit"
+}
+
+function mergeCompetitorLists(existing: string[], suggested: string[]): string[] {
+  const next = [...existing]
+
+  for (const name of suggested) {
+    const trimmed = name.trim()
+    if (!trimmed) continue
+    if (next.some((chip) => chip.toLowerCase() === trimmed.toLowerCase())) {
+      continue
+    }
+    next.push(trimmed)
+  }
+
+  return next
 }
 
 function CompetitorChipInput({
@@ -149,6 +165,51 @@ export function ProfileForm({
     initialData?.competitors?.map((c) => c.trim()).filter(Boolean) ?? [],
   )
   const [competitorInput, setCompetitorInput] = useState("")
+  const [isFindingCompetitors, setIsFindingCompetitors] = useState(false)
+  const [competitorSuggestError, setCompetitorSuggestError] = useState("")
+
+  const canSuggestCompetitors =
+    formData.companyName.trim() &&
+    formData.industry.trim() &&
+    formData.productDescription.trim()
+
+  const handleFindCompetitors = async () => {
+    setCompetitorSuggestError("")
+
+    if (!canSuggestCompetitors) {
+      setCompetitorSuggestError(
+        "Fill in company, industry, and product description first.",
+      )
+      return
+    }
+
+    setIsFindingCompetitors(true)
+
+    try {
+      const suggested = await suggestCompetitors({
+        company_name: formData.companyName.trim(),
+        industry: formData.industry.trim(),
+        product_description: formData.productDescription.trim(),
+      })
+
+      if (suggested.length === 0) {
+        setCompetitorSuggestError("No competitors were suggested. Try adding your own.")
+        return
+      }
+
+      setCompetitorChips((prev) => mergeCompetitorLists(prev, suggested))
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setCompetitorSuggestError(err.message)
+      } else if (err instanceof Error) {
+        setCompetitorSuggestError(err.message)
+      } else {
+        setCompetitorSuggestError("Could not fetch competitor suggestions.")
+      }
+    } finally {
+      setIsFindingCompetitors(false)
+    }
+  }
 
   const commitCompetitorInput = useCallback(() => {
     const trimmed = competitorInput.trim()
@@ -276,19 +337,36 @@ export function ProfileForm({
         </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="competitors" className="font-sketch text-lg">
-          Competitors to Track *
-        </Label>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Label htmlFor="competitors" className="font-sketch text-lg">
+            Competitors to Track *
+          </Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="sketch-border-thin font-sketch shrink-0"
+            onClick={handleFindCompetitors}
+            disabled={isLoading || isFindingCompetitors || !canSuggestCompetitors}
+          >
+            <Sparkles className="mr-1.5 h-4 w-4" />
+            {isFindingCompetitors ? "Finding..." : "Find competitors"}
+          </Button>
+        </div>
         <CompetitorChipInput
           chips={competitorChips}
           inputValue={competitorInput}
           onChipsChange={setCompetitorChips}
           onInputChange={setCompetitorInput}
           onCommitInput={commitCompetitorInput}
-          disabled={isLoading}
+          disabled={isLoading || isFindingCompetitors}
         />
+        {competitorSuggestError && (
+          <p className="text-xs text-destructive">{competitorSuggestError}</p>
+        )}
         <p className="text-xs text-ink/50">
-          Type a name, then press comma or Enter. Backspace removes the last tag.
+          Use Find competitors for AI suggestions, or type names and press comma or Enter.
+          You can remove any tag with × or Backspace.
         </p>
       </div>
 
