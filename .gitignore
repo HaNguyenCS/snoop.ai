@@ -72,6 +72,7 @@ Testing/
 
 # Python / Backend
 venv/
+.venv/
 .env
 .env.local
 frontend/.env.local
@@ -89,3 +90,5 @@ frontend/.next/
 
 # Mac
 .DS_Store
+
+market_monitor.db
