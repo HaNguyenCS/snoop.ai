@@ -8,7 +8,16 @@
 
 // Test keywords
 const std::vector<std::string> target_keywords = {
-      "NVidia",
+    "aptera",
+    "bmw",
+    "fisker",
+    "general motors",
+    "hyundai",
+    "lucid motors",
+    "nio",
+    "polestar",
+    "rivian",
+    "volkswagen",
 };
 
 bool is_word_char(unsigned char c) {
@@ -68,35 +77,30 @@ int main() {
             simdjson::ondemand::document doc = parser.iterate(json_data);
 
             std::string_view post_text;
-            auto error = doc["commit"]["record"]["text"].get_string().get(post_text);
-            if (error) {
+            auto get_post_error = doc["commit"]["record"]["text"].get_string().get(post_text);
+            if (get_post_error || !passes_filter(post_text)) {
                 return;
             }
 
-            if (passes_filter(post_text)) {
-                std::cout << post_text << std::endl;
-                //std::cout << post_text << std::endl;
-                // passed++;
-                // total++;
-            } else {
-                // std::cout << "Filtered" << std::endl;
-                // total++;
+            std::string_view post_lang;
+            auto get_lang_error = doc["commit"]["record"]["langs"].at(0).get_string().get(post_lang);
+            if (get_lang_error || post_lang.length() < 2 || post_lang.substr(0, 2) != "en") {
+                std::cout << "Post lang: " << post_lang << std::endl;
+                return;
             }
 
-
+            std::cout << post_text << std::endl;
         } else if (msg->type == ix::WebSocketMessageType::Open) {
             std::cout << "Connection established" << std::endl;
-            std::cout << "> " << std::flush;
         } else if (msg->type == ix::WebSocketMessageType::Error) {
             std::cout << "Connection error: " << msg->errorInfo.reason << std::endl;
-            std::cout << "> " << std::flush;
         }
     });
 
     webSocket.start();
 
     for (;;) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
     return 0;
