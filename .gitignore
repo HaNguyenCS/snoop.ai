@@ -71,6 +71,7 @@ Testing/
 .vscode/
 
 venv/
+.venv/
 .env
 data/
 __pycache__/
