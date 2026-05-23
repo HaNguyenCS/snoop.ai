@@ -1,0 +1,6 @@
+fastapi
+sqlalchemy
+dotenv
+groq
+jose
+pwdlib
