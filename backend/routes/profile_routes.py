@@ -17,7 +17,6 @@ from app.schemas import (
     MonitoringProfileResponse,
 )
 
-
 router = APIRouter(prefix="/profiles", tags=["Monitoring Profiles"])
 
 EXPORT_DIR = "data/keyword_exports"

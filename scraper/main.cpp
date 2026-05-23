@@ -18,7 +18,7 @@
 struct AhoCorasick {
     struct Node {
         std::array<int, 128> children;
-        int fail = 0; 
+        int fail = 0;
         std::vector<std::pair<int,std::string>> outputs; // (profile_id, keyword) pairs
         Node() { children.fill(-1); }
     };
@@ -90,7 +90,7 @@ struct AhoCorasick {
                 }
             }
         }
-    
+
         return results;
     }
 
@@ -159,7 +159,7 @@ bool fetch_and_rebuild(const std::string& api_url) {
 void config_watcher_thread(const std::string& api_url) {
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(15));
-        
+
         if (!fetch_and_rebuild(api_url)) {
             std::cerr << "[config] Failed to fetch keywords.\n";
         } else {
@@ -211,7 +211,7 @@ int main() {
             if (doc["commit"]["record"]["text"].get_string().get(post_text)) {
                 return;
             }
-            
+
             std::vector<std::pair<int, std::string>> matches;
             {
                 std::lock_guard<std::mutex> lock(g_ac_mutex);
