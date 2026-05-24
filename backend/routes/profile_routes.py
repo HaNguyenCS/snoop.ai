@@ -16,6 +16,7 @@ from app.schemas import (
     CompetitorSuggestionResponse,
     MonitoringProfileCreate,
     MonitoringProfileResponse,
+    ScraperEventResponse,
 )
 
 router = APIRouter(prefix="/profiles", tags=["Monitoring Profiles"])
@@ -59,6 +60,46 @@ def profile_to_response(profile: MonitoringProfile) -> dict:
         "product_description": profile.product_description,
         "competitors": json.loads(profile.competitors_json),
         "keywords": json.loads(profile.keywords_json),
+    }
+
+
+def get_owned_profile(
+    profile_id: int,
+    db: Session,
+    current_user: User,
+) -> MonitoringProfile:
+    profile = (
+        db.query(MonitoringProfile)
+        .filter(
+            MonitoringProfile.id == profile_id,
+            MonitoringProfile.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile not found",
+        )
+
+    return profile
+
+
+def event_to_response(event: ScraperEvent) -> dict:
+    return {
+        "id": event.id,
+        "profile_id": event.profile_id,
+        "source": event.source,
+        "matched_keyword": event.matched_keyword,
+        "text": event.text,
+        "url": event.url,
+        "verdict": event.verdict,
+        "category": event.category,
+        "summary": event.summary,
+        "action_item": event.action_item,
+        "detected_at": event.detected_at,
+        "created_at": event.created_at,
     }
 
 
@@ -137,21 +178,7 @@ def get_one_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    profile = (
-        db.query(MonitoringProfile)
-        .filter(
-            MonitoringProfile.id == profile_id,
-            MonitoringProfile.user_id == current_user.id,
-        )
-        .first()
-    )
-
-    if profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profile not found",
-        )
-
+    profile = get_owned_profile(profile_id, db, current_user)
     return profile_to_response(profile)
 
 
@@ -161,22 +188,26 @@ def get_profile_keywords(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    profile = (
-        db.query(MonitoringProfile)
-        .filter(
-            MonitoringProfile.id == profile_id,
-            MonitoringProfile.user_id == current_user.id,
-        )
-        .first()
+    profile = get_owned_profile(profile_id, db, current_user)
+    return json.loads(profile.keywords_json)
+
+
+@router.get("/{profile_id}/events", response_model=list[ScraperEventResponse])
+def get_profile_events(
+    profile_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    get_owned_profile(profile_id, db, current_user)
+
+    events = (
+        db.query(ScraperEvent)
+        .filter(ScraperEvent.profile_id == profile_id)
+        .order_by(ScraperEvent.detected_at.desc(), ScraperEvent.id.desc())
+        .all()
     )
 
-    if profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Profile not found",
-        )
-
-    return json.loads(profile.keywords_json)
+    return [event_to_response(event) for event in events]
 
 
 @router.get("/{profile_id}/metrics")
@@ -185,6 +216,8 @@ def get_metrics(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    get_owned_profile(profile_id, db, current_user)
+
     events = db.query(ScraperEvent).filter(ScraperEvent.profile_id == profile_id)
 
     total = events.count()
