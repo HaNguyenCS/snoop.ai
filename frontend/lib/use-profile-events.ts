@@ -1,7 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { fetchProfileEvents } from "@/lib/api"
+import { fetchProfileEvents, fetchProfileMetrics } from "@/lib/api"
+import {
+  EMPTY_DASHBOARD_METRICS,
+  computeDashboardMetrics,
+  type DashboardMetrics,
+} from "@/lib/dashboard-metrics"
 import {
   mapEventToAiInsight,
   mapEventToCompetitorPost,
@@ -11,15 +16,17 @@ import {
 import type { AiInsight } from "@/lib/mock-data"
 
 const DEFAULT_INSIGHTS_LIMIT = 3
-const POLL_INTERVAL_MS = 1000
+const POLL_INTERVAL_MS = 5000
 
 export function useProfileEvents(
   profileId: string | null | undefined,
-  options?: { insightsLimit?: number },
+  options?: { insightsLimit?: number; monitoredCompetitors?: number },
 ) {
   const insightsLimit = options?.insightsLimit ?? DEFAULT_INSIGHTS_LIMIT
+  const monitoredCompetitors = options?.monitoredCompetitors
   const [posts, setPosts] = useState<CompetitorNewsPost[]>([])
   const [insights, setInsights] = useState<AiInsight[]>([])
+  const [metrics, setMetrics] = useState<DashboardMetrics>(EMPTY_DASHBOARD_METRICS)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,6 +34,7 @@ export function useProfileEvents(
     if (!profileId) {
       setPosts([])
       setInsights([])
+      setMetrics(EMPTY_DASHBOARD_METRICS)
       setError(null)
       setLoading(false)
       return
@@ -43,18 +51,28 @@ export function useProfileEvents(
           setLoading(true)
         }
         setError(null)
-        const events = await fetchProfileEvents(profileId!)
+
+        const [events, apiMetrics] = await Promise.all([
+          fetchProfileEvents(profileId!),
+          fetchProfileMetrics(profileId!),
+        ])
+
         if (cancelled) return
+
         const sorted = sortEventsByPriority(events)
         setPosts(sorted.map(mapEventToCompetitorPost))
         setInsights(sorted.slice(0, insightsLimit).map(mapEventToAiInsight))
+        setMetrics(
+          computeDashboardMetrics(events, apiMetrics, { monitoredCompetitors }),
+        )
       } catch (err) {
         if (cancelled) return
         if (isInitial) {
           setPosts([])
           setInsights([])
+          setMetrics(EMPTY_DASHBOARD_METRICS)
         }
-        setError(err instanceof Error ? err.message : "Failed to load events")
+        setError(err instanceof Error ? err.message : "Failed to load profile data")
       } finally {
         inFlight = false
         if (!cancelled && isInitial) {
@@ -73,7 +91,7 @@ export function useProfileEvents(
       cancelled = true
       window.clearInterval(intervalId)
     }
-  }, [profileId, insightsLimit])
+  }, [profileId, insightsLimit, monitoredCompetitors])
 
-  return { posts, insights, loading, error }
+  return { posts, insights, metrics, loading, error }
 }

@@ -78,6 +78,8 @@ venv/
 frontend/.env.local
 backend/data/
 backend/market_monitor.db
+backend/market_monitor.db-wal
+backend/market_monitor.db-shm
 __pycache__/
 *.pyc
 
