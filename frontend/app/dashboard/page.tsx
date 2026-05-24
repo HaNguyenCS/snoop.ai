@@ -11,14 +11,13 @@ import { DashboardHeader } from "@/components/sketch/dashboard-header"
 import { useAuth } from "@/lib/auth-context"
 import { mockDashboardData, type AiInsight, type ProfileDashboardData } from "@/lib/mock-data"
 import { CompetitorFeed } from "@/components/dashboard/competitor-feed"
-import { EventsRefreshButton } from "@/components/dashboard/events-refresh-button"
 import { useProfileEvents } from "@/lib/use-profile-events"
 
 const INSIGHTS_LIMIT = 3
 
 export default function DashboardPage() {
   const { isAuthenticated, currentProfile, setCurrentProfile, profiles } = useAuth()
-  const { posts, insights, loading, refreshing, error, refresh } = useProfileEvents(
+  const { posts, insights, loading, error } = useProfileEvents(
     currentProfile?.id,
     { insightsLimit: INSIGHTS_LIMIT },
   )
@@ -75,17 +74,10 @@ export default function DashboardPage() {
                 <h3 className="font-sketch text-2xl font-bold text-ink">
                   Competitor Feed
                 </h3>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="sketch-border-thin">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
-                    Live updates
-                  </Badge>
-                  <EventsRefreshButton
-                    onRefresh={refresh}
-                    refreshing={refreshing}
-                    disabled={loading}
-                  />
-                </div>
+                <Badge variant="outline" className="sketch-border-thin">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
+                  Live updates
+                </Badge>
               </div>
 
               <CompetitorFeed
@@ -98,7 +90,7 @@ export default function DashboardPage() {
 
             <div className="space-y-6">
               <FilteringFunnelMini funnel={dashboardData.filteringFunnel} />
-              <AiInsightsPanel insights={insights} loading={loading && !refreshing} />
+              <AiInsightsPanel insights={insights} loading={loading} />
             </div>
           </div>
         </div>

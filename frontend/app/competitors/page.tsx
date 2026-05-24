@@ -5,7 +5,6 @@ import { ArrowRight, Plus } from "lucide-react"
 import { AppSidebar } from "@/components/sketch/app-sidebar"
 import { DashboardHeader } from "@/components/sketch/dashboard-header"
 import { CompetitorFeed } from "@/components/dashboard/competitor-feed"
-import { EventsRefreshButton } from "@/components/dashboard/events-refresh-button"
 import { useProfileEvents } from "@/lib/use-profile-events"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,9 +12,7 @@ import { useAuth } from "@/lib/auth-context"
 
 export default function CompetitorsPage() {
   const { profiles, currentProfile, setCurrentProfile } = useAuth()
-  const { posts, loading, refreshing, error, refresh } = useProfileEvents(
-    currentProfile?.id,
-  )
+  const { posts, loading, error } = useProfileEvents(currentProfile?.id)
 
   if (!currentProfile) {
     return (
@@ -110,14 +107,7 @@ export default function CompetitorsPage() {
           </div>
 
           <div className="sketch-border bg-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-sketch text-xl font-bold text-ink">Recent events</h2>
-              <EventsRefreshButton
-                onRefresh={refresh}
-                refreshing={refreshing}
-                disabled={loading}
-              />
-            </div>
+            <h2 className="font-sketch text-xl font-bold text-ink mb-4">Recent events</h2>
             <CompetitorFeed posts={posts} loading={loading} error={error} />
           </div>
         </div>
