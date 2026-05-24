@@ -75,6 +75,22 @@ export function mapEventToAiInsight(event: ScraperEventResponse): AiInsight {
 
 export type FeedSortOption = "priority" | "newest" | "oldest" | "company"
 
+export type FeedTimeRange = "all" | "1h" | "24h" | "7d"
+
+export type FeedPriorityFilter = "all" | Verdict
+
+export interface FeedFilters {
+  priority: FeedPriorityFilter
+  timeRange: FeedTimeRange
+  competitor: string
+}
+
+export const DEFAULT_FEED_FILTERS: FeedFilters = {
+  priority: "all",
+  timeRange: "all",
+  competitor: "all",
+}
+
 export const FEED_SORT_LABELS: Record<FeedSortOption, string> = {
   priority: "Priority",
   newest: "Newest first",
@@ -82,8 +98,69 @@ export const FEED_SORT_LABELS: Record<FeedSortOption, string> = {
   company: "Company A–Z",
 }
 
+export const FEED_TIME_RANGE_LABELS: Record<FeedTimeRange, string> = {
+  all: "All time",
+  "1h": "Past hour",
+  "24h": "Past day",
+  "7d": "Past week",
+}
+
+export const FEED_PRIORITY_LABELS: Record<FeedPriorityFilter, string> = {
+  all: "All priorities",
+  High: "High",
+  Medium: "Medium",
+  Low: "Low",
+  None: "None",
+}
+
+const TIME_RANGE_MS: Record<Exclude<FeedTimeRange, "all">, number> = {
+  "1h": 60 * 60 * 1000,
+  "24h": 24 * 60 * 60 * 1000,
+  "7d": 7 * 24 * 60 * 60 * 1000,
+}
+
 function postTimeMs(post: CompetitorNewsPost): number {
   return parseApiDate(post.posted_at)?.getTime() ?? 0
+}
+
+export function getFeedCompetitorOptions(posts: CompetitorNewsPost[]): string[] {
+  return [...new Set(posts.map((post) => post.company))].sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" }),
+  )
+}
+
+export function isFeedFiltersActive(filters: FeedFilters): boolean {
+  return (
+    filters.priority !== "all" ||
+    filters.timeRange !== "all" ||
+    filters.competitor !== "all"
+  )
+}
+
+export function filterCompetitorPosts(
+  posts: CompetitorNewsPost[],
+  filters: FeedFilters,
+): CompetitorNewsPost[] {
+  const now = Date.now()
+
+  return posts.filter((post) => {
+    if (filters.priority !== "all" && post.verdict !== filters.priority) {
+      return false
+    }
+
+    if (filters.competitor !== "all" && post.company !== filters.competitor) {
+      return false
+    }
+
+    if (filters.timeRange !== "all") {
+      const postMs = postTimeMs(post)
+      if (!postMs) return false
+      const cutoff = now - TIME_RANGE_MS[filters.timeRange]
+      if (postMs < cutoff) return false
+    }
+
+    return true
+  })
 }
 
 export function sortCompetitorPosts(

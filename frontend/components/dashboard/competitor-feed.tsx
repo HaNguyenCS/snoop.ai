@@ -17,6 +17,7 @@ interface CompetitorFeedProps {
   loading?: boolean
   error?: string | null
   limit?: number
+  emptyMessage?: string
 }
 
 function getVerdictClass(verdict: Verdict) {
@@ -126,6 +127,7 @@ export function CompetitorFeed({
   loading = false,
   error = null,
   limit,
+  emptyMessage,
 }: CompetitorFeedProps) {
   const visiblePosts =
     typeof limit === "number" ? posts.slice(0, limit) : posts
@@ -150,7 +152,8 @@ export function CompetitorFeed({
     return (
       <CardContent className="p-0">
         <p className="text-sm text-muted-foreground">
-          No competitor events yet. Events appear here once the scraper finds relevant posts.
+          {emptyMessage ??
+            "No competitor events yet. Events appear here once the scraper finds relevant posts."}
         </p>
       </CardContent>
     )
