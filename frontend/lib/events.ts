@@ -73,6 +73,44 @@ export function mapEventToAiInsight(event: ScraperEventResponse): AiInsight {
   }
 }
 
+export type FeedSortOption = "priority" | "newest" | "oldest" | "company"
+
+export const FEED_SORT_LABELS: Record<FeedSortOption, string> = {
+  priority: "Priority",
+  newest: "Newest first",
+  oldest: "Oldest first",
+  company: "Company A–Z",
+}
+
+function postTimeMs(post: CompetitorNewsPost): number {
+  return parseApiDate(post.posted_at)?.getTime() ?? 0
+}
+
+export function sortCompetitorPosts(
+  posts: CompetitorNewsPost[],
+  sort: FeedSortOption,
+): CompetitorNewsPost[] {
+  const copy = [...posts]
+
+  switch (sort) {
+    case "newest":
+      return copy.sort((a, b) => postTimeMs(b) - postTimeMs(a))
+    case "oldest":
+      return copy.sort((a, b) => postTimeMs(a) - postTimeMs(b))
+    case "company":
+      return copy.sort((a, b) =>
+        a.company.localeCompare(b.company, undefined, { sensitivity: "base" }),
+      )
+    case "priority":
+    default:
+      return copy.sort((a, b) => {
+        const verdictDiff = verdictRank[b.verdict] - verdictRank[a.verdict]
+        if (verdictDiff !== 0) return verdictDiff
+        return postTimeMs(b) - postTimeMs(a)
+      })
+  }
+}
+
 export function sortEventsByPriority(events: ScraperEventResponse[]): ScraperEventResponse[] {
   return [...events].sort((a, b) => {
     const verdictDiff =

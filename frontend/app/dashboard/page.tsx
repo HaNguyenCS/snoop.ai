@@ -10,7 +10,7 @@ import { AppSidebar } from "@/components/sketch/app-sidebar"
 import { DashboardHeader } from "@/components/sketch/dashboard-header"
 import { useAuth } from "@/lib/auth-context"
 import { mockDashboardData, type AiInsight, type ProfileDashboardData } from "@/lib/mock-data"
-import { CompetitorFeed } from "@/components/dashboard/competitor-feed"
+import { CompetitorFeedPanel } from "@/components/dashboard/competitor-feed-panel"
 import { useProfileEvents } from "@/lib/use-profile-events"
 
 const INSIGHTS_LIMIT = 3
@@ -70,26 +70,12 @@ export default function DashboardPage() {
           {/* Main grid */}
           <div className="grid lg:grid-cols-2 gap-6">
             <div className="bg-card sketch-border p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <h3 className="font-sketch text-2xl font-bold text-ink">
-                    Competitor Feed
-                  </h3>
-                  <span className="font-sketch text-2xl font-bold text-primary tabular-nums">
-                    {posts.length}
-                  </span>
-                </div>
-                <Badge variant="outline" className="sketch-border-thin">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
-                  Live updates
-                </Badge>
-              </div>
-
-              <CompetitorFeed
+              <CompetitorFeedPanel
                 posts={posts}
                 loading={loading}
                 error={error}
                 limit={5}
+                showLiveBadge
               />
             </div>
 

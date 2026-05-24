@@ -4,7 +4,7 @@ import Link from "next/link"
 import { ArrowRight, Plus } from "lucide-react"
 import { AppSidebar } from "@/components/sketch/app-sidebar"
 import { DashboardHeader } from "@/components/sketch/dashboard-header"
-import { CompetitorFeed } from "@/components/dashboard/competitor-feed"
+import { CompetitorFeedPanel } from "@/components/dashboard/competitor-feed-panel"
 import { useProfileEvents } from "@/lib/use-profile-events"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -107,13 +107,13 @@ export default function CompetitorsPage() {
           </div>
 
           <div className="sketch-border bg-card p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <h2 className="font-sketch text-xl font-bold text-ink">Recent events</h2>
-              <span className="font-sketch text-xl font-bold text-primary tabular-nums">
-                {posts.length}
-              </span>
-            </div>
-            <CompetitorFeed posts={posts} loading={loading} error={error} />
+            <CompetitorFeedPanel
+              posts={posts}
+              loading={loading}
+              error={error}
+              title="Recent events"
+              titleClassName="font-sketch text-xl font-bold text-ink"
+            />
           </div>
         </div>
       </main>
