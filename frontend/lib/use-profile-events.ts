@@ -11,7 +11,7 @@ import {
 import type { AiInsight } from "@/lib/mock-data"
 
 const DEFAULT_INSIGHTS_LIMIT = 3
-const POLL_INTERVAL_MS = 3000
+const POLL_INTERVAL_MS = 1000
 
 export function useProfileEvents(
   profileId: string | null | undefined,

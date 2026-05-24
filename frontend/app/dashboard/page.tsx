@@ -71,9 +71,14 @@ export default function DashboardPage() {
           <div className="grid lg:grid-cols-2 gap-6">
             <div className="bg-card sketch-border p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-sketch text-2xl font-bold text-ink">
-                  Competitor Feed
-                </h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="font-sketch text-2xl font-bold text-ink">
+                    Competitor Feed
+                  </h3>
+                  <span className="font-sketch text-2xl font-bold text-primary tabular-nums">
+                    {posts.length}
+                  </span>
+                </div>
                 <Badge variant="outline" className="sketch-border-thin">
                   <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
                   Live updates

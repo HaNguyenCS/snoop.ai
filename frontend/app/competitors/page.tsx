@@ -107,7 +107,12 @@ export default function CompetitorsPage() {
           </div>
 
           <div className="sketch-border bg-card p-5">
-            <h2 className="font-sketch text-xl font-bold text-ink mb-4">Recent events</h2>
+            <div className="flex items-center gap-3 mb-4">
+              <h2 className="font-sketch text-xl font-bold text-ink">Recent events</h2>
+              <span className="font-sketch text-xl font-bold text-primary tabular-nums">
+                {posts.length}
+              </span>
+            </div>
             <CompetitorFeed posts={posts} loading={loading} error={error} />
           </div>
         </div>
