@@ -38,6 +38,10 @@ class MonitoringProfileCreate(BaseModel):
     competitors: List[str]
 
 
+class MonitoringProfileUpdate(MonitoringProfileCreate):
+    pass
+
+
 class MonitoringProfileResponse(BaseModel):
     id: int
     profile_name: str
@@ -47,7 +51,6 @@ class MonitoringProfileResponse(BaseModel):
     product_description: str
     competitors: List[str]
     keywords: dict
-
 
 class ScraperEventResponse(BaseModel):
     id: int
@@ -62,3 +65,15 @@ class ScraperEventResponse(BaseModel):
     action_item: Optional[str] = None
     detected_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
+
+class KeywordExportDocument(BaseModel):
+    exported_at: str
+    user_id: int
+    profile_id: int
+    profile_name: str
+    phone_number: str
+    keywords: dict
+
+
+class KeywordExportUpdate(BaseModel):
+    keywords: dict

@@ -12,6 +12,7 @@ import {
   AUTH_SESSION_EXPIRED_EVENT,
   clearAuthStorage,
   createProfile,
+  updateProfile as updateProfileApi,
   fetchCurrentUser,
   fetchProfiles,
   getValidAccessToken,
@@ -39,7 +40,10 @@ interface AuthContextType {
   addProfile: (
     profile: Omit<Profile, "id" | "createdAt" | "updatedAt">,
   ) => Promise<Profile>
-  updateProfile: (id: string, data: Partial<Profile>) => void
+  updateProfile: (
+    id: string,
+    profile: Omit<Profile, "id" | "createdAt" | "updatedAt">,
+  ) => Promise<Profile>
   updateUser: (data: Partial<User>) => void
   refreshProfiles: () => Promise<void>
 }
@@ -198,15 +202,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  const updateProfile = useCallback((id: string, data: Partial<Profile>) => {
-    setProfiles((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, ...data, updatedAt: new Date().toISOString() }
-          : p,
-      ),
-    )
-  }, [])
+  const updateProfile = useCallback(
+    async (id: string, profileData: Omit<Profile, "id" | "createdAt" | "updatedAt">) => {
+      const updated = await updateProfileApi(id, {
+        profile_name: profileData.profileName.trim(),
+        phone_number: profileData.phoneNumber.trim(),
+        company_name: profileData.companyName,
+        industry: profileData.industry.trim() || "General",
+        product_description: profileData.productDescription.trim(),
+        competitors: profileData.competitors,
+      })
+
+      const mapped = mapApiProfileToAppProfile(updated)
+      const previous = profiles.find((p) => p.id === id)
+
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? {
+                ...mapped,
+                createdAt: previous?.createdAt ?? mapped.createdAt,
+                updatedAt: new Date().toISOString(),
+              }
+            : p,
+        ),
+      )
+
+      return mapped
+    },
+    [profiles],
+  )
 
   const updateUser = useCallback((data: Partial<User>) => {
     setUser((prev) => (prev ? { ...prev, ...data } : null))

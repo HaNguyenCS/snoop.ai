@@ -8,7 +8,6 @@ export interface Profile {
   companyName: string
   industry: string
   productDescription: string
-  website: string
   competitors: string[]
   keywords: string[]
   createdAt: string
@@ -78,7 +77,6 @@ export const mockProfiles: Profile[] = [
     companyName: "Acme AI",
     industry: "AI/ML Infrastructure",
     productDescription: "Enterprise AI infrastructure and model serving platform.",
-    website: "https://acme.ai",
     competitors: ["LaunchFlow", "Northbeam", "DataPilot", "CloudScale"],
     keywords: ["AI infrastructure", "model serving", "MLOps", "enterprise AI"],
     createdAt: "2024-01-15T10:00:00Z",
@@ -91,7 +89,6 @@ export const mockProfiles: Profile[] = [
     companyName: "LaunchFlow",
     industry: "Developer Tools",
     productDescription: "Deployment and CI/CD platform for modern teams.",
-    website: "https://launchflow.io",
     competitors: ["Vercel", "Netlify", "Railway", "Render"],
     keywords: ["deployment", "CI/CD", "serverless", "developer experience"],
     createdAt: "2024-02-01T09:00:00Z",
@@ -104,7 +101,6 @@ export const mockProfiles: Profile[] = [
     companyName: "Northbeam",
     industry: "Marketing Analytics",
     productDescription: "Marketing attribution and analytics for e-commerce brands.",
-    website: "https://northbeam.io",
     competitors: ["Triple Whale", "Rockerbox", "Attribution", "Measured"],
     keywords: ["attribution", "marketing analytics", "ROAS", "media mix"],
     createdAt: "2024-02-10T08:00:00Z",
