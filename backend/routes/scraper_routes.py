@@ -9,11 +9,13 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from groq import Groq
 
-from app.database import get_db
+from app.database import SessionLocal, get_db
 from app.models import MonitoringProfile, ScraperEvent
 from app.ai_client import analyze_post
 
 router = APIRouter(prefix="/scraper", tags=["Scraper"])
+
+_pipeline_semaphore = asyncio.Semaphore(2)
 
 
 @router.get("/config")
@@ -32,7 +34,7 @@ def get_scraper_config(db: Session = Depends(get_db)):
     return {"profiles": result}
 
 
-async def handle_match(line: str, db: Session):
+async def handle_match(line: str):
     try:
         match = json.loads(line.strip())
     except json.JSONDecodeError:
@@ -46,36 +48,45 @@ async def handle_match(line: str, db: Session):
         return
 
     first_keyword = profiles[0]["keyword"]
-    verdict = analyze_post(text, first_keyword)
 
-    if not verdict or not verdict.get("is_relevant"):
-        return
+    async with _pipeline_semaphore:
+        verdict = await asyncio.to_thread(analyze_post, text, first_keyword)
 
-    for entry in profiles:
-        profile_id = entry["profile_id"]
-        keyword = entry["keyword"]
+        if not verdict or not verdict.get("is_relevant"):
+            return
 
-        event = ScraperEvent(
-            profile_id=profile_id,
-            source="bluesky",
-            matched_keyword=keyword,
-            text=text,
-            url=url,
-            verdict=verdict["verdict"],
-            category=verdict.get("category"),
-            summary=verdict.get("summary"),
-            action_item=verdict.get("action_item"),
-            detected_at=datetime.now(timezone.utc),
-        )
-        db.add(event)
+        db = SessionLocal()
+        try:
+            for entry in profiles:
+                profile_id = entry["profile_id"]
+                keyword = entry["keyword"]
 
-    db.commit()
-    print(
-        f"[pipeline] Stored verdict={verdict['verdict']} for {len(profiles)} profile(s)"
-    )
+                event = ScraperEvent(
+                    profile_id=profile_id,
+                    source="bluesky",
+                    matched_keyword=keyword,
+                    text=text,
+                    url=url,
+                    verdict=verdict["verdict"],
+                    category=verdict.get("category"),
+                    summary=verdict.get("summary"),
+                    action_item=verdict.get("action_item"),
+                    detected_at=datetime.now(timezone.utc),
+                )
+                db.add(event)
+
+            db.commit()
+            print(
+                f"[pipeline] Stored verdict={verdict['verdict']} for {len(profiles)} profile(s)"
+            )
+        except Exception as exc:
+            db.rollback()
+            print(f"[pipeline] Failed to store event: {exc}")
+        finally:
+            db.close()
 
 
-async def run_cpp_engine(db: Session):
+async def run_cpp_engine():
     process = subprocess.Popen(
         ["../scraper/build/scraper"],
         stdout=subprocess.PIPE,
@@ -90,6 +101,6 @@ async def run_cpp_engine(db: Session):
         if not line:
             print("[cpp] Engine died, restarting in 5s")
             await asyncio.sleep(5)
-            asyncio.create_task(run_cpp_engine(db))
+            asyncio.create_task(run_cpp_engine())
             return
-        asyncio.create_task(handle_match(line, db))
+        asyncio.create_task(handle_match(line))

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { fetchProfileEvents } from "@/lib/api"
 import {
   mapEventToAiInsight,
@@ -23,41 +23,6 @@ export function useProfileEvents(
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(
-    async (isPoll: boolean) => {
-      if (!profileId) {
-        setPosts([])
-        setInsights([])
-        setError(null)
-        setLoading(false)
-        return
-      }
-
-      if (!isPoll) {
-        setLoading(true)
-      }
-      setError(null)
-
-      try {
-        const events = await fetchProfileEvents(profileId)
-        const sorted = sortEventsByPriority(events)
-        setPosts(sorted.map(mapEventToCompetitorPost))
-        setInsights(sorted.slice(0, insightsLimit).map(mapEventToAiInsight))
-      } catch (err) {
-        if (!isPoll) {
-          setPosts([])
-          setInsights([])
-        }
-        setError(err instanceof Error ? err.message : "Failed to load events")
-      } finally {
-        if (!isPoll) {
-          setLoading(false)
-        }
-      }
-    },
-    [profileId, insightsLimit],
-  )
-
   useEffect(() => {
     if (!profileId) {
       setPosts([])
@@ -67,16 +32,48 @@ export function useProfileEvents(
       return
     }
 
-    void load(false)
+    let cancelled = false
+    let inFlight = false
+
+    async function poll(isInitial: boolean) {
+      if (inFlight) return
+      inFlight = true
+      try {
+        if (isInitial) {
+          setLoading(true)
+        }
+        setError(null)
+        const events = await fetchProfileEvents(profileId!)
+        if (cancelled) return
+        const sorted = sortEventsByPriority(events)
+        setPosts(sorted.map(mapEventToCompetitorPost))
+        setInsights(sorted.slice(0, insightsLimit).map(mapEventToAiInsight))
+      } catch (err) {
+        if (cancelled) return
+        if (isInitial) {
+          setPosts([])
+          setInsights([])
+        }
+        setError(err instanceof Error ? err.message : "Failed to load events")
+      } finally {
+        inFlight = false
+        if (!cancelled && isInitial) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void poll(true)
 
     const intervalId = window.setInterval(() => {
-      void load(true)
+      void poll(false)
     }, POLL_INTERVAL_MS)
 
     return () => {
+      cancelled = true
       window.clearInterval(intervalId)
     }
-  }, [profileId, load])
+  }, [profileId, insightsLimit])
 
   return { posts, insights, loading, error }
 }

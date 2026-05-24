@@ -5,6 +5,7 @@ import { parseApiDate } from "@/lib/format-time"
 export type Verdict = "High" | "Medium" | "Low" | "None"
 
 export interface CompetitorNewsPost {
+  id: string
   company: string
   source_url: string
   posted_at: string
@@ -53,6 +54,7 @@ function eventTimeMs(event: ScraperEventResponse): number {
 
 export function mapEventToCompetitorPost(event: ScraperEventResponse): CompetitorNewsPost {
   return {
+    id: String(event.id),
     company: event.matched_keyword ?? "Unknown",
     source_url: event.url ?? "#",
     posted_at: eventTimestamp(event),
