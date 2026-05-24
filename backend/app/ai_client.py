@@ -6,7 +6,6 @@ from typing import Any, Dict, List
 from dotenv import load_dotenv
 from groq import Groq
 
-
 load_dotenv()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -111,3 +110,44 @@ JSON format:
                 cleaned.append(competitor)
 
     return sorted(set(cleaned))[:10]
+
+
+def analyze_post(text: str, competitor: str) -> Dict[str, Any]:
+    system_prompt = """
+    You are a corporate risk intelligence analyst.
+    Analyze social media posts for strategic business threats.
+    Return only valid JSON. No markdown. No explanation.
+    """
+    user_prompt = f"""
+Analyze this post about {competitor} for strategic business risk.
+
+Post: {text}
+
+Return JSON:
+{{
+  "is_relevant": true or false,
+  "verdict": "High" | "Medium" | "Low" | "None",
+  "category": "Product Launch" | "Feature Release" | "Pricing Change" | "Partnership" | "Funding" | "Acquisition" | "Market Expansion" | "AI Innovation" | "Regulation" | "Executive Change",
+  "summary": "1-2 sentences on economic or strategic impact.",
+  "action_item": "Concrete recommendation for leadership."
+}}
+"""
+    for attempt in range(4):
+        try:
+            resp = client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                model=GROQ_MODEL,
+                response_format={"type": "json_object"},
+                temperature=0.2,
+            )
+            return json.loads(resp.choices[0].message.content)
+        except Exception as e:
+            wait = 2**attempt
+            print(f"[groq] Attempt {attempt+1} failed: {e}. Retrying in {wait}s")
+            import time
+
+            time.sleep(wait)
+    return None

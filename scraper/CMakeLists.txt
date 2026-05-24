@@ -41,9 +41,9 @@ FetchContent_MakeAvailable(simdjson)
 
 # --- EXECUTABLE & LINKING ---
 
-add_executable(fetch_filter main.cpp)
+add_executable(scraper main.cpp)
 
-target_link_libraries(fetch_filter PRIVATE 
+target_link_libraries(scraper PRIVATE 
     simdjson::simdjson 
     cpr::cpr
     ixwebsocket::ixwebsocket

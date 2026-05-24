@@ -263,7 +263,6 @@ export function mapApiProfileToAppProfile(
     companyName: apiProfile.company_name,
     industry: apiProfile.industry,
     productDescription: apiProfile.product_description,
-    website: "",
     competitors: apiProfile.competitors,
     keywords: keywordsToStringList(apiProfile.keywords),
     createdAt: now,
@@ -284,6 +283,16 @@ export async function createProfile(
   })
 }
 
+export async function updateProfile(
+  profileId: string | number,
+  payload: MonitoringProfileCreatePayload,
+): Promise<MonitoringProfileResponse> {
+  return apiFetch<MonitoringProfileResponse>(`/profiles/${profileId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function suggestCompetitors(payload: {
   company_name: string
   industry: string
@@ -297,4 +306,59 @@ export async function suggestCompetitors(payload: {
     },
   )
   return result.suggested_competitors
+}
+
+export type KeywordExportDocument = {
+  exported_at: string
+  user_id: number
+  profile_id: number
+  profile_name: string
+  phone_number: string
+  keywords: Record<string, unknown>
+}
+
+export async function fetchProfileKeywordExport(
+  profileId: string | number,
+): Promise<KeywordExportDocument> {
+  return apiFetch<KeywordExportDocument>(`/profiles/${profileId}/keywords`)
+}
+
+/** Regenerate keywords from the profile's current fields (one export per profile). */
+export async function createProfileKeywords(
+  profileId: string | number,
+): Promise<KeywordExportDocument> {
+  return apiFetch<KeywordExportDocument>(`/profiles/${profileId}/keywords`, {
+    method: "POST",
+  })
+}
+
+export async function updateProfileKeywords(
+  profileId: string | number,
+  keywords: Record<string, unknown>,
+): Promise<KeywordExportDocument> {
+  return apiFetch<KeywordExportDocument>(`/profiles/${profileId}/keywords`, {
+    method: "PUT",
+    body: JSON.stringify({ keywords }),
+  })
+}
+
+export type ScraperEventResponse = {
+  id: number
+  profile_id: number
+  source: string
+  matched_keyword: string | null
+  text: string | null
+  url: string | null
+  verdict: string | null
+  category: string | null
+  summary: string | null
+  action_item: string | null
+  detected_at: string | null
+  created_at: string | null
+}
+
+export async function fetchProfileEvents(
+  profileId: string | number,
+): Promise<ScraperEventResponse[]> {
+  return apiFetch<ScraperEventResponse[]>(`/profiles/${profileId}/events`)
 }

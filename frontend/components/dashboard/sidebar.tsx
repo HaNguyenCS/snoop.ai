@@ -27,10 +27,10 @@ interface SidebarProps {
 const navItems = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "competitors", label: "Competitors", icon: Users },
-  { id: "signals", label: "Signals", icon: Radio },
+  // { id: "signals", label: "Signals", icon: Radio },
   { id: "insights", label: "AI Insights", icon: Brain },
   { id: "alerts", label: "Alerts", icon: Bell },
-  { id: "sources", label: "Sources", icon: Database },
+  // { id: "sources", label: "Sources", icon: Database },
   { id: "settings", label: "Settings", icon: Settings },
 ]
 

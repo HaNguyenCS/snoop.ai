@@ -1,140 +1,180 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowUpRight, Clock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ExternalLink, TrendingUp, Clock } from "lucide-react"
+import { CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+import {
+  type CompetitorNewsPost,
+  type Verdict,
+} from "@/lib/events"
 
-const competitorUpdates = [
-  {
-    id: 1,
-    company: "Acme AI",
-    companyInitial: "A",
-    companyColor: "bg-primary/20 text-primary",
-    title: "Launched a new enterprise pricing tier",
-    source: "Pricing Page",
-    signalScore: 94,
-    impact: "High",
-    impactColor: "bg-chart-5/10 text-chart-5 border-chart-5/30",
-    aiSummary: "Likely targeting larger B2B customers. Consider reviewing enterprise packaging.",
-    time: "2h ago",
-  },
-  {
-    id: 2,
-    company: "Northstar Labs",
-    companyInitial: "N",
-    companyColor: "bg-accent/20 text-accent",
-    title: "Posted 8 new ML infrastructure roles",
-    source: "Careers Page",
-    signalScore: 81,
-    impact: "Medium",
-    impactColor: "bg-chart-4/10 text-chart-4 border-chart-4/30",
-    aiSummary: "Hiring pattern suggests increased investment in model serving infrastructure.",
-    time: "4h ago",
-  },
-  {
-    id: 3,
-    company: "BrightCart",
-    companyInitial: "B",
-    companyColor: "bg-chart-3/20 text-chart-3",
-    title: "Updated checkout flow documentation",
-    source: "Product Docs",
-    signalScore: 76,
-    impact: "Medium",
-    impactColor: "bg-chart-4/10 text-chart-4 border-chart-4/30",
-    aiSummary: "May indicate upcoming improvements to conversion optimization features.",
-    time: "6h ago",
-  },
-  {
-    id: 4,
-    company: "NovaCloud",
-    companyInitial: "N",
-    companyColor: "bg-chart-4/20 text-chart-4",
-    title: "Published a blog post on SOC 2 compliance",
-    source: "Blog",
-    signalScore: 63,
-    impact: "Low",
-    impactColor: "bg-chart-3/10 text-chart-3 border-chart-3/30",
-    aiSummary: "Relevant to enterprise trust positioning but not urgent.",
-    time: "8h ago",
-  },
-]
+export type { CompetitorNewsPost }
 
-function getSignalScoreColor(score: number) {
-  if (score >= 90) return "text-chart-5"
-  if (score >= 75) return "text-chart-4"
-  return "text-chart-3"
+interface CompetitorFeedProps {
+  posts: CompetitorNewsPost[]
+  loading?: boolean
+  error?: string | null
+  limit?: number
 }
 
-export function CompetitorFeed() {
+function getVerdictClass(verdict: Verdict) {
+  switch (verdict) {
+    case "High":
+      return "bg-red-50 text-red-600 border-red-200"
+    case "Medium":
+      return "bg-orange-50 text-orange-600 border-orange-200"
+    case "Low":
+      return "bg-blue-50 text-blue-600 border-blue-200"
+    case "None":
+      return "bg-muted text-muted-foreground border-border"
+  }
+}
+
+function getLeftBarColor(verdict: Verdict) {
+  switch (verdict) {
+    case "High":
+      return "#dc2626"
+    case "Medium":
+      return "#ea580c"
+    case "Low":
+      return "#2563eb"
+    case "None":
+      return "#9ca3af"
+  }
+}
+
+function getAvatarClass(verdict: Verdict) {
+  switch (verdict) {
+    case "High":
+      return "bg-red-50 text-red-600"
+    case "Medium":
+      return "bg-orange-50 text-orange-600"
+    case "Low":
+      return "bg-blue-50 text-blue-600"
+    case "None":
+      return "bg-muted text-muted-foreground"
+  }
+}
+
+function formatRelativeTime(postedAt: string) {
+  const date = new Date(postedAt)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMinutes = Math.max(0, Math.floor(diffMs / 60000))
+
+  if (diffMinutes < 60) return `${diffMinutes}m ago`
+
+  const diffHours = Math.floor(diffMinutes / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+
+  const diffDays = Math.floor(diffHours / 24)
+  return `${diffDays}d ago`
+}
+
+function PostCard({ post }: { post: CompetitorNewsPost }) {
   return (
-    <Card className="bg-card/50 border-border/50">
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <CardTitle className="text-xl">Competitor Feed</CardTitle>
-        <Button variant="ghost" size="sm" className="text-muted-foreground">
-          View All
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {competitorUpdates.map((update) => (
-          <div 
-            key={update.id} 
-            className="p-4 rounded-xl bg-background/50 border border-border/50 hover:border-primary/30 transition-all group"
-          >
-            <div className="flex items-start gap-4">
-              {/* Company avatar */}
-              <div className={`w-10 h-10 rounded-lg ${update.companyColor} flex items-center justify-center font-bold flex-shrink-0`}>
-                {update.companyInitial}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <p className="font-semibold text-foreground">{update.company}</p>
-                    <p className="text-sm text-foreground/90 mt-0.5">{update.title}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Badge variant="outline" className={update.impactColor}>
-                      {update.impact}
-                    </Badge>
-                    <div className="flex items-center gap-1 text-sm">
-                      <TrendingUp className={`w-4 h-4 ${getSignalScoreColor(update.signalScore)}`} />
-                      <span className={`font-mono font-semibold ${getSignalScoreColor(update.signalScore)}`}>
-                        {update.signalScore}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* AI Summary */}
-                <div className="bg-primary/5 rounded-lg p-3 mb-3">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="text-primary font-medium">AI Summary:</span> {update.aiSummary}
-                  </p>
-                </div>
-                
-                {/* Footer */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <ExternalLink className="w-3 h-3" />
-                      {update.source}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {update.time}
-                    </span>
-                  </div>
-                  <Button variant="ghost" size="sm" className="h-7 opacity-0 group-hover:opacity-100 transition-opacity">
-                    View Details
-                  </Button>
-                </div>
-              </div>
+    <div
+      className="p-4 rounded-xl bg-background/50 border border-border/50 hover:border-primary/30 transition-all group"
+      style={{
+        borderLeft: "3px solid",
+        borderLeftColor: getLeftBarColor(post.verdict),
+      }}
+    >
+      <div className="flex items-start gap-4">
+        <div
+          className={cn(
+            "w-10 h-10 rounded-lg flex items-center justify-center font-bold shrink-0",
+            getAvatarClass(post.verdict),
+          )}
+        >
+          {post.company.charAt(0)}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div>
+              <p className="font-semibold text-foreground">{post.company}</p>
+              <p className="text-sm text-foreground/90 mt-0.5">{post.summary}</p>
             </div>
+            <Badge
+              variant="outline"
+              className={cn("font-medium", getVerdictClass(post.verdict))}
+            >
+              {post.verdict}
+            </Badge>
           </div>
-        ))}
+          {post.action_item ? (
+            <div className="bg-yellow-100/80 rounded-lg p-3 mb-3">
+              <p className="text-sm text-muted-foreground italic">
+                <span className="text-foreground font-medium">AI:</span>{" "}
+                {post.action_item}
+              </p>
+            </div>
+          ) : null}
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {formatRelativeTime(post.posted_at)}
+            </span>
+            {post.source_url !== "#" ? (
+              <a
+                href={post.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-7 inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:underline"
+              >
+                Original post
+                <ArrowUpRight className="w-3 h-3" />
+              </a>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function CompetitorFeed({
+  posts,
+  loading = false,
+  error = null,
+  limit,
+}: CompetitorFeedProps) {
+  const visiblePosts =
+    typeof limit === "number" ? posts.slice(0, limit) : posts
+
+  if (loading) {
+    return (
+      <CardContent className="p-0">
+        <p className="text-sm text-muted-foreground">Loading competitor events...</p>
       </CardContent>
-    </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <CardContent className="p-0">
+        <p className="text-sm text-red-600">{error}</p>
+      </CardContent>
+    )
+  }
+
+  if (visiblePosts.length === 0) {
+    return (
+      <CardContent className="p-0">
+        <p className="text-sm text-muted-foreground">
+          No competitor events yet. Events appear here once the scraper finds relevant posts.
+        </p>
+      </CardContent>
+    )
+  }
+
+  return (
+    <CardContent className="space-y-4 p-0">
+      {visiblePosts.map((post, index) => (
+        <PostCard key={`${post.company}-${post.posted_at}-${index}`} post={post} />
+      ))}
+    </CardContent>
   )
 }
