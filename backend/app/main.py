@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
 from routes.auth_routes import router as auth_router
 from routes.profile_routes import router as profile_router
-from app.database import SessionLocal
 from routes.scraper_routes import router as scraper_router, run_cpp_engine
 
 Base.metadata.create_all(bind=engine)
@@ -15,10 +14,8 @@ Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    db = SessionLocal()
-    asyncio.create_task(run_cpp_engine(db))
+    asyncio.create_task(run_cpp_engine())
     yield
-    db.close()
 
 
 app = FastAPI(

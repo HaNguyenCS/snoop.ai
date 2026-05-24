@@ -91,6 +91,14 @@ def get_owned_profile(
     return profile
 
 
+def serialize_datetime(dt: datetime | None) -> str | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat().replace("+00:00", "Z")
+
+
 def event_to_response(event: ScraperEvent) -> dict:
     return {
         "id": event.id,
@@ -103,8 +111,8 @@ def event_to_response(event: ScraperEvent) -> dict:
         "category": event.category,
         "summary": event.summary,
         "action_item": event.action_item,
-        "detected_at": event.detected_at,
-        "created_at": event.created_at,
+        "detected_at": serialize_datetime(event.detected_at),
+        "created_at": serialize_datetime(event.created_at),
     }
 
 
