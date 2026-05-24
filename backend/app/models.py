@@ -39,7 +39,6 @@ class MonitoringProfile(Base):
     profile_name = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
 
-
     created_at = Column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
@@ -48,3 +47,23 @@ class MonitoringProfile(Base):
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     owner = relationship("User", back_populates="profiles")
+    events = relationship("ScraperEvent", back_populates="profile")
+
+
+class ScraperEvent(Base):
+    __tablename__ = "scraper_events"
+
+    id = Column(Integer, primary_key=True)
+    profile_id = Column(Integer, ForeignKey("monitoring_profiles.id"))
+    source = Column(String, default="bluesky")
+    matched_keyword = Column(String)
+    text = Column(String)
+    url = Column(String)
+    verdict = Column(String)  # High / Medium / Low / None
+    category = Column(String)
+    summary = Column(String)
+    action_item = Column(String)
+    detected_at = Column(DateTime)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    profile = relationship("MonitoringProfile", back_populates="events")
