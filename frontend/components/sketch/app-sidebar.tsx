@@ -16,11 +16,11 @@ import { cn } from "@/lib/utils"
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: FolderOpen, label: "Profiles", href: "/profiles" },
-  { icon: Users, label: "Competitors", href: "/dashboard/competitors" },
-  { icon: Zap, label: "Signals", href: "/dashboard/signals" },
-  { icon: Sparkles, label: "Insights", href: "/dashboard/insights" },
-  { icon: Bell, label: "Alerts", href: "/dashboard/alerts", badge: "4" },
-  { icon: Database, label: "Sources", href: "/dashboard/sources" },
+  { icon: Users, label: "Competitors", href: "/competitors" },
+  // { icon: Zap, label: "Signals", href: "/dashboard/signals" },
+  { icon: Sparkles, label: "Insights", href: "/insights" },
+  { icon: Bell, label: "Alerts", href: "/alerts", badge: "4" },
+  // { icon: Database, label: "Sources", href: "/dashboard/sources" },
 ]
 
 const bottomNavItems = [
