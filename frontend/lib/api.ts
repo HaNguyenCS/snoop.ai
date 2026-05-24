@@ -341,3 +341,24 @@ export async function updateProfileKeywords(
     body: JSON.stringify({ keywords }),
   })
 }
+
+export type ScraperEventResponse = {
+  id: number
+  profile_id: number
+  source: string
+  matched_keyword: string | null
+  text: string | null
+  url: string | null
+  verdict: string | null
+  category: string | null
+  summary: string | null
+  action_item: string | null
+  detected_at: string | null
+  created_at: string | null
+}
+
+export async function fetchProfileEvents(
+  profileId: string | number,
+): Promise<ScraperEventResponse[]> {
+  return apiFetch<ScraperEventResponse[]>(`/profiles/${profileId}/events`)
+}

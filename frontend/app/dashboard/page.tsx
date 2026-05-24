@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { 
   Eye, Zap, Filter, Sparkles, 
   ArrowUpRight, Minus, TrendingUp
@@ -10,12 +9,19 @@ import { Badge } from "@/components/ui/badge"
 import { AppSidebar } from "@/components/sketch/app-sidebar"
 import { DashboardHeader } from "@/components/sketch/dashboard-header"
 import { useAuth } from "@/lib/auth-context"
-import { mockDashboardData, type ProfileDashboardData } from "@/lib/mock-data"
+import { mockDashboardData, type AiInsight, type ProfileDashboardData } from "@/lib/mock-data"
 import { CompetitorFeed } from "@/components/dashboard/competitor-feed"
+import { EventsRefreshButton } from "@/components/dashboard/events-refresh-button"
+import { useProfileEvents } from "@/lib/use-profile-events"
+
+const INSIGHTS_LIMIT = 3
 
 export default function DashboardPage() {
-  const router = useRouter()
   const { isAuthenticated, currentProfile, setCurrentProfile, profiles } = useAuth()
+  const { posts, insights, loading, refreshing, error, refresh } = useProfileEvents(
+    currentProfile?.id,
+    { insightsLimit: INSIGHTS_LIMIT },
+  )
 
   // Set default profile if none selected
   useEffect(() => {
@@ -24,11 +30,7 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, currentProfile, profiles, setCurrentProfile])
 
-  // TODO: Replace with proper auth check when backend is ready
-  // For demo, we'll allow access
-
-  // Get dashboard data for current profile
-  const dashboardData: ProfileDashboardData | undefined = currentProfile 
+  const dashboardData: ProfileDashboardData | undefined = currentProfile
     ? mockDashboardData[currentProfile.id] || mockDashboardData["profile-1"]
     : mockDashboardData["profile-1"]
 
@@ -73,18 +75,30 @@ export default function DashboardPage() {
                 <h3 className="font-sketch text-2xl font-bold text-ink">
                   Competitor Feed
                 </h3>
-                <Badge variant="outline" className="sketch-border-thin">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
-                  Live updates
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="sketch-border-thin">
+                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
+                    Live updates
+                  </Badge>
+                  <EventsRefreshButton
+                    onRefresh={refresh}
+                    refreshing={refreshing}
+                    disabled={loading}
+                  />
+                </div>
               </div>
 
-              <CompetitorFeed limit={5} currentProfile={currentProfile} />
+              <CompetitorFeed
+                posts={posts}
+                loading={loading}
+                error={error}
+                limit={5}
+              />
             </div>
 
             <div className="space-y-6">
               <FilteringFunnelMini funnel={dashboardData.filteringFunnel} />
-              <AiInsightsPanel insights={dashboardData.aiInsights} />
+              <AiInsightsPanel insights={insights} loading={loading && !refreshing} />
             </div>
           </div>
         </div>
@@ -165,25 +179,37 @@ function FunnelRow({ label, value, percentage, highlight }: { label: string; val
   )
 }
 
-function AiInsightsPanel({ insights }: { insights: ProfileDashboardData["aiInsights"] }) {
+function AiInsightsPanel({
+  insights,
+  loading,
+}: {
+  insights: AiInsight[]
+  loading: boolean
+}) {
   return (
     <div className="bg-card sketch-border p-5">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-5 h-5 text-primary" />
         <h3 className="font-sketch text-xl font-bold text-ink">AI Insights</h3>
       </div>
-      
-      <div className="space-y-3">
-        {insights.map((insight) => (
-          <div key={insight.id} className="p-3 bg-secondary/30 rounded-md">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-medium text-ink">{insight.title}</span>
-              <span className="text-xs text-ink/50 bg-secondary px-2 py-0.5 rounded-full">{insight.confidence}% conf</span>
+
+      {loading ? (
+        <p className="text-sm text-ink/60">Loading insights...</p>
+      ) : insights.length === 0 ? (
+        <p className="text-sm text-ink/60">No insights yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {insights.map((insight) => (
+            <div key={insight.id} className="p-3 bg-secondary/30 rounded-md">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium text-ink">{insight.title}</span>
+                <span className="text-xs text-ink/50 bg-secondary px-2 py-0.5 rounded-full">{insight.confidence}% conf</span>
+              </div>
+              <p className="text-sm text-ink/70">{insight.description}</p>
             </div>
-            <p className="text-sm text-ink/70">{insight.description}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
