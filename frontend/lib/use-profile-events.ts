@@ -11,6 +11,7 @@ import {
 import type { AiInsight } from "@/lib/mock-data"
 
 const DEFAULT_INSIGHTS_LIMIT = 3
+const POLL_INTERVAL_MS = 1000
 
 export function useProfileEvents(
   profileId: string | null | undefined,
@@ -20,23 +21,19 @@ export function useProfileEvents(
   const [posts, setPosts] = useState<CompetitorNewsPost[]>([])
   const [insights, setInsights] = useState<AiInsight[]>([])
   const [loading, setLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(
-    async (isRefresh: boolean) => {
+    async (isPoll: boolean) => {
       if (!profileId) {
         setPosts([])
         setInsights([])
         setError(null)
         setLoading(false)
-        setRefreshing(false)
         return
       }
 
-      if (isRefresh) {
-        setRefreshing(true)
-      } else {
+      if (!isPoll) {
         setLoading(true)
       }
       setError(null)
@@ -47,24 +44,39 @@ export function useProfileEvents(
         setPosts(sorted.map(mapEventToCompetitorPost))
         setInsights(sorted.slice(0, insightsLimit).map(mapEventToAiInsight))
       } catch (err) {
-        setPosts([])
-        setInsights([])
+        if (!isPoll) {
+          setPosts([])
+          setInsights([])
+        }
         setError(err instanceof Error ? err.message : "Failed to load events")
       } finally {
-        setLoading(false)
-        setRefreshing(false)
+        if (!isPoll) {
+          setLoading(false)
+        }
       }
     },
     [profileId, insightsLimit],
   )
 
   useEffect(() => {
+    if (!profileId) {
+      setPosts([])
+      setInsights([])
+      setError(null)
+      setLoading(false)
+      return
+    }
+
     void load(false)
-  }, [load])
 
-  const refresh = useCallback(() => {
-    void load(true)
-  }, [load])
+    const intervalId = window.setInterval(() => {
+      void load(true)
+    }, POLL_INTERVAL_MS)
 
-  return { posts, insights, loading, refreshing, error, refresh }
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [profileId, load])
+
+  return { posts, insights, loading, error }
 }
