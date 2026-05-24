@@ -1,9 +1,10 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ArrowUpDown, Filter } from "lucide-react"
+import { ArrowUpDown, Filter, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,7 @@ import {
   filterCompetitorPosts,
   getFeedCompetitorOptions,
   isFeedFiltersActive,
+  searchCompetitorPosts,
   sortCompetitorPosts,
   type CompetitorNewsPost,
   type FeedFilters,
@@ -52,15 +54,19 @@ export function CompetitorFeedPanel({
 }: CompetitorFeedPanelProps) {
   const [sort, setSort] = useState<FeedSortOption>("priority")
   const [filters, setFilters] = useState<FeedFilters>(DEFAULT_FEED_FILTERS)
+  const [searchQuery, setSearchQuery] = useState("")
 
   const competitorOptions = useMemo(() => getFeedCompetitorOptions(posts), [posts])
 
   const filteredPosts = useMemo(() => {
     const filtered = filterCompetitorPosts(posts, filters)
-    return sortCompetitorPosts(filtered, sort)
-  }, [posts, filters, sort])
+    const searched = searchCompetitorPosts(filtered, searchQuery)
+    return sortCompetitorPosts(searched, sort)
+  }, [posts, filters, searchQuery, sort])
 
   const filtersActive = isFeedFiltersActive(filters)
+  const searchActive = searchQuery.trim().length > 0
+  const refinementActive = filtersActive || searchActive
 
   function updateFilters(patch: Partial<FeedFilters>) {
     setFilters((current) => ({ ...current, ...patch }))
@@ -78,7 +84,7 @@ export function CompetitorFeedPanel({
           titleClassName={titleClassName}
           filteredCount={filteredPosts.length}
           totalCount={posts.length}
-          filtersActive={filtersActive}
+          filtersActive={refinementActive}
         />
 
         <div className="flex flex-wrap items-center gap-2">
@@ -190,14 +196,25 @@ export function CompetitorFeedPanel({
         </div>
       </div>
 
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search competitor, summary, or action..."
+          className="pl-9 sketch-border-thin"
+        />
+      </div>
+
       <CompetitorFeed
         posts={filteredPosts}
         loading={loading}
         error={error}
         limit={limit}
         emptyMessage={
-          filtersActive && posts.length > 0
-            ? "No events match the current filters."
+          refinementActive && posts.length > 0
+            ? "No events match your search or filters."
             : undefined
         }
       />

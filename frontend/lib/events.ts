@@ -137,6 +137,27 @@ export function isFeedFiltersActive(filters: FeedFilters): boolean {
   )
 }
 
+export function searchCompetitorPosts(
+  posts: CompetitorNewsPost[],
+  query: string,
+): CompetitorNewsPost[] {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return posts
+
+  return posts.filter((post) => {
+    const haystack = [
+      post.company,
+      post.summary,
+      post.action_item,
+      post.verdict,
+    ]
+      .join(" ")
+      .toLowerCase()
+
+    return haystack.includes(normalized)
+  })
+}
+
 export function filterCompetitorPosts(
   posts: CompetitorNewsPost[],
   filters: FeedFilters,
