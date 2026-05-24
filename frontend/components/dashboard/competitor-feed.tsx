@@ -4,6 +4,7 @@ import { ArrowUpRight, Clock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { formatRelativeTime } from "@/lib/format-time"
 import {
   type CompetitorNewsPost,
   type Verdict,
@@ -55,21 +56,6 @@ function getAvatarClass(verdict: Verdict) {
     case "None":
       return "bg-muted text-muted-foreground"
   }
-}
-
-function formatRelativeTime(postedAt: string) {
-  const date = new Date(postedAt)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMinutes = Math.max(0, Math.floor(diffMs / 60000))
-
-  if (diffMinutes < 60) return `${diffMinutes}m ago`
-
-  const diffHours = Math.floor(diffMinutes / 60)
-  if (diffHours < 24) return `${diffHours}h ago`
-
-  const diffDays = Math.floor(diffHours / 24)
-  return `${diffDays}d ago`
 }
 
 function PostCard({ post }: { post: CompetitorNewsPost }) {

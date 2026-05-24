@@ -1,5 +1,6 @@
 import type { AiInsight } from "@/lib/mock-data"
 import type { ScraperEventResponse } from "@/lib/api"
+import { parseApiDate } from "@/lib/format-time"
 
 export type Verdict = "High" | "Medium" | "Low" | "None"
 
@@ -46,6 +47,10 @@ function eventTimestamp(event: ScraperEventResponse): string {
   return event.detected_at ?? event.created_at ?? new Date().toISOString()
 }
 
+function eventTimeMs(event: ScraperEventResponse): number {
+  return parseApiDate(eventTimestamp(event))?.getTime() ?? 0
+}
+
 export function mapEventToCompetitorPost(event: ScraperEventResponse): CompetitorNewsPost {
   return {
     company: event.matched_keyword ?? "Unknown",
@@ -77,6 +82,6 @@ export function sortEventsByPriority(events: ScraperEventResponse[]): ScraperEve
       return verdictDiff
     }
 
-    return new Date(eventTimestamp(b)).getTime() - new Date(eventTimestamp(a)).getTime()
+    return eventTimeMs(b) - eventTimeMs(a)
   })
 }
