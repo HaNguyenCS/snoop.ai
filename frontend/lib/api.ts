@@ -342,6 +342,21 @@ export async function updateProfileKeywords(
   })
 }
 
+export type ProfileMetricsResponse = {
+  insights_generated: number
+  high_priority_alerts: number
+  noise_reduction_pct: number
+  top_competitor: string
+  competitor_hits: Record<string, number>
+  time_saved_hours: number
+}
+
+export async function fetchProfileMetrics(
+  profileId: string | number,
+): Promise<ProfileMetricsResponse> {
+  return apiFetch<ProfileMetricsResponse>(`/profiles/${profileId}/metrics`)
+}
+
 export type ScraperEventResponse = {
   id: number
   profile_id: number
